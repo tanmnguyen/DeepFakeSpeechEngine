@@ -1,0 +1,7 @@
+services: 
+  app:
+    volumes:
+      - .:/app:delegated
+    build: .
+    container_name: speech-recognition 
+    
