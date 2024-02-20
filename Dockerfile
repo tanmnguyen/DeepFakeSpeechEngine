@@ -26,8 +26,8 @@ RUN apt-get -y install build-essential
 RUN apt-get install -y unzip sox gfortran python2.7 automake autoconf git libtool subversion
 RUN git clone https://github.com/kaldi-asr/kaldi.git
 RUN kaldi/tools/extras/install_mkl.sh
-RUN cd kaldi/tools && make -j 4 
-RUN cd kaldi/src && ./configure --shared && make depend -j 8 && make -j 8
+RUN cd kaldi/tools && make -j $(nproc)
+RUN cd kaldi/src && ./configure --shared && make depend -j 8 && make -j $(nproc)
 
 RUN wget https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/cuda_11.8.0_520.61.05_linux.run
 RUN apt-get install -y libxml2
