@@ -164,3 +164,7 @@ cython_debug/
 icefall
 kaldi
 voicebox
+
+db
+egs/tedlium/db
+egs/tedlium/data
