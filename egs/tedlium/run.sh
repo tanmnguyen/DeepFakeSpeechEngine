@@ -75,7 +75,31 @@ train_lm=false
 #   local/format_lms.sh
 # fi
 
-# # Feature extraction
+# # Make mel spectrogram features 
+# if [ $stage -le 6 ]; then
+#   for set in test dev train; do
+#     dir=data/$set
+#     python scripts/compute_melspectrogram.py --data $dir --nprocs 30 
+#   done
+# fi
+
+# Make mfcc features 
+if [ $stage -le 7 ]; then
+  for set in test dev train; do
+    dir=data/$set
+    python scripts/compute_mfcc.py --data $dir --nprocs 30
+  done
+fi
+
+# Fbank features extraction 
+# if [ $stage -le 6 ]; then
+#   for set in test dev train; do
+#     dir=data/$set
+#     scripts/make_spectrogram.sh --nj 30 --cmd "$train_cmd" $dir
+#   done
+# fi
+
+# # Feature MFCC extraction
 # if [ $stage -le 6 ]; then
 #   for set in test dev train; do
 #     dir=data/$set
@@ -84,12 +108,21 @@ train_lm=false
 #   done
 # fi
 
+# Fbank features extraction 
+# if [ $stage -le 7 ]; then
+#   for set in test dev train; do
+#     dir=data/$set
+#     scripts/make_fbank.sh --nj 30 --cmd "$train_cmd" $dir
+#   done
+# fi
+
+# scripts/make_mel_spectrogram.sh --nj 30 --cmd "$train_cmd" data/train
 # Now we have 452 hours of training data.
 # Well create a subset with 10k short segments to make flat-start training easier:
-if [ $stage -le 7 ]; then
-  utils/subset_data_dir.sh --shortest data/train 10000 data/train_10kshort
-  utils/data/remove_dup_utts.sh 10 data/train_10kshort data/train_10kshort_nodup
-fi
+# if [ $stage -le 7 ]; then
+#   utils/subset_data_dir.sh --shortest data/train 10000 data/train_10kshort
+#   utils/data/remove_dup_utts.sh 10 data/train_10kshort data/train_10kshort_nodup
+# fi
 
 # # Train
 # if [ $stage -le 8 ]; then

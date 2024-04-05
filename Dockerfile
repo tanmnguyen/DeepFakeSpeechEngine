@@ -77,6 +77,11 @@ RUN pip install torch==2.1.2+cu121 -f https://download.pytorch.org/whl/torch_sta
 RUN pip install kaldifeat==1.25.3.dev20231221+cuda12.1.torch2.1.2 -f https://csukuangfj.github.io/kaldifeat/cuda.html
 
 RUN apt install python-is-python3
+
+# install dependencies 
+RUN pip install librosa
+RUN pip install h5py
+
 # # install wenet 
 # RUN pip install git+https://github.com/wenet-e2e/wenet.git
 
