@@ -104,7 +104,7 @@ def main(args):
             log_file
         )
         
-        torch.save(model.state_dict(), f"speech_recognition_epoch_{epoch+1}.pt")
+        torch.save(model.state_dict(), os.path.join(result_dir, f"asr_model_{epoch+1}.pt"))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
