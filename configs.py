@@ -7,5 +7,5 @@ speech_recognition_cfg = {
     'learning_rate': 1e-3,
 }
 
-# device = 'cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu'
-device = 'cpu'
+device = 'cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu'
+# device = 'cpu'
