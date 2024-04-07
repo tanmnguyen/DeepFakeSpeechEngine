@@ -1,6 +1,7 @@
 import sys 
 sys.path.append('../')
 
+import math
 import torch 
 import configs 
 
@@ -8,9 +9,9 @@ from tqdm import tqdm
 from utils.metrics import compute_error_rate
 
 
-def assert_loss(loss):
-    assert torch.isnan(loss).item() == False, "Loss is NaN!"
-    assert torch.isinf(loss).item() == False, "Loss is Inf!"
+def assert_loss(loss_val):
+    if math.isnan(loss_val) or math.isinf(loss_val):
+        raise ValueError(f'Loss value is {loss_val}')
 
 def train_net(model, train_dataloader, optimizer, scheduler):
     model.train()
@@ -21,15 +22,17 @@ def train_net(model, train_dataloader, optimizer, scheduler):
 
         optimizer.zero_grad()
         loss, output = model.loss(mfcc, text)
-        assert_loss(loss)
+
+        loss_val = loss.item()
+        assert_loss(loss_val)
 
         loss.backward()
         optimizer.step()
         scheduler.step()
 
         with torch.no_grad():
-            wer, ser = compute_error_rate(output.cpu().detach(), text.cpu().detach())
-            epoch_loss += loss.item()
+            wer, ser = compute_error_rate(output, text)
+            epoch_loss += loss_val
             epoch_wer += wer
             epoch_ser += ser
 
@@ -49,10 +52,12 @@ def valid_net(model, valid_dataloader):
 
         with torch.no_grad():
             loss, output = model.loss(mfcc, text)
-            assert_loss(loss)
 
-            wer, ser = compute_error_rate(output.cpu().detach(), text.cpu().detach())
-            epoch_loss += loss.item()
+            loss_val = loss.item()
+            assert_loss(loss_val)
+
+            wer, ser = compute_error_rate(output, text)
+            epoch_loss += loss_val
             epoch_wer += wer
             epoch_ser += ser
 
