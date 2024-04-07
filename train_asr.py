@@ -85,7 +85,7 @@ def main(args):
     )
 
     for epoch in range(hparams['epochs']):
-        train_history = train_net(model, train_dataloader, optimizer, scheduler)
+        train_history = train_net(model, train_dataloader, optimizer, scheduler, log_file)
         log(
             f"[Train] Epoch: {epoch+1}/{hparams['epochs']} - " + 
             f"Loss: {train_history['loss']} | " + 
