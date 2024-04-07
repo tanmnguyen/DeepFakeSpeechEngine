@@ -2,7 +2,7 @@ import torch
 
 # speech recognition training configurations 
 speech_recognition_cfg = {
-    'batch_size': 32,
+    'batch_size': 8,
     'epochs': 30,
     'learning_rate': 1e-3,
 }
