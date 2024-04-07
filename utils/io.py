@@ -151,3 +151,9 @@ def read_melspectrogram_from_batch(batch):
 
 
     return melspectrogram_features
+
+
+def log(message, log_file):
+    print(message)
+    with open(log_file, 'a') as f:
+        f.write(f"{message}\n")

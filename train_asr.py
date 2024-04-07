@@ -1,12 +1,13 @@
 import os 
+import time 
 import torch 
 import configs 
 import argparse 
 
+from utils.io import log
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from WordTokenizer import word_tokenizer
-from configs import speech_recognition_cfg 
 from utils.batch import speech_recognition_collate_fn
 from datasets.ASRMelSpecDataset import ASRMelSpecDataset
 from models.SpeechRecognitionModel import SpeechRecognitionModel
@@ -14,6 +15,13 @@ from models.SpeechRecognitionModel import SpeechRecognitionModel
 from utils.steps import train_net, valid_net
 from tqdm import tqdm
 
+# create a directory to save the results
+str_time = time.strftime("%m-%d-%Y-%H-%M-%S")
+result_dir = os.path.join(configs.result_dir, f'{str_time}')
+os.makedirs(result_dir, exist_ok=True)
+
+# define log file 
+log_file = os.path.join(result_dir, 'log.txt')
 
 def main(args):
     # load word tokenizer
@@ -63,9 +71,9 @@ def main(args):
         dropout=hparams['dropout']
     ).to(configs.device)
 
-    print(model)
-    print("Device: ", configs.device)
-    print("Number of parameters: ", sum(p.numel() for p in model.parameters()))
+    log(model, log_file)
+    log(f"Device: {configs.device}", log_file)
+    log(f"Number of parameters: {sum(p.numel() for p in model.parameters())}", log_file)
 
     optimizer = optim.AdamW(model.parameters(), hparams['learning_rate'])
     scheduler = optim.lr_scheduler.OneCycleLR(
@@ -76,25 +84,27 @@ def main(args):
         anneal_strategy='linear'
     )
 
-
-    train_history, valid_history = [], [] 
+    train_history, valid_history = [], []
     for epoch in range(hparams['epochs']):
         train_history.append(train_net(model, train_dataloader, optimizer, scheduler))
-        print(
+        log(
             f"[Train] Epoch: {epoch+1}/{hparams['epochs']} - " + 
             f"Loss: {train_history[-1]['loss']} | " + 
             f"WER: {train_history[-1]['wer']} | " + 
-            f"SER: {train_history[-1]['ser']}"
+            f"SER: {train_history[-1]['ser']}",
+            log_file
         )
 
         valid_history.append(valid_net(model, valid_dataloader))
-        print(
+        log(
             f"[Valid] Epoch: {epoch+1}/{hparams['epochs']} - " + 
             f"Loss: {valid_history[-1]['loss']} | " + 
             f"WER: {valid_history[-1]['wer']} | " + 
-            f"SER: {valid_history[-1]['ser']}"
+            f"SER: {valid_history[-1]['ser']}",
+            log_file
         )
-        break
+        
+        torch.save(model.state_dict(), f"speech_recognition_epoch_{epoch+1}.pt")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
