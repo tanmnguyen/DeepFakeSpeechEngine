@@ -42,12 +42,12 @@ def train_net(model, train_dataloader, optimizer, scheduler):
 
 def valid_net(model, valid_dataloader):
     model.eval()
+    
+    epoch_loss, epoch_wer, epoch_ser = 0.0, 0.0, 0.0
+    for mfcc, text in tqdm(valid_dataloader):
+        mfcc, text = mfcc.to(configs.device), text.to(configs.device)
 
-    with torch.no_grad():
-        epoch_loss, epoch_wer, epoch_ser = 0.0, 0.0, 0.0
-        for mfcc, text in tqdm(valid_dataloader):
-            mfcc, text = mfcc.to(configs.device), text.to(configs.device)
-
+        with torch.no_grad():
             loss, output = model.loss(mfcc, text)
             assert_loss(loss)
 
