@@ -28,7 +28,7 @@ def train_net(model, train_dataloader, optimizer, scheduler):
         scheduler.step()
 
         with torch.no_grad():
-            wer, ser = compute_error_rate(output, text)
+            wer, ser = compute_error_rate(output.cpu().detach(), text.cpu().detach())
             epoch_loss += loss.item()
             epoch_wer += wer
             epoch_ser += ser
@@ -51,7 +51,7 @@ def valid_net(model, valid_dataloader):
             loss, output = model.loss(mfcc, text)
             assert_loss(loss)
 
-            wer, ser = compute_error_rate(output, text)
+            wer, ser = compute_error_rate(output.cpu().detach(), text.cpu().detach())
             epoch_loss += loss.item()
             epoch_wer += wer
             epoch_ser += ser

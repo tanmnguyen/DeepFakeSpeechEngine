@@ -84,23 +84,22 @@ def main(args):
         anneal_strategy='linear'
     )
 
-    train_history, valid_history = [], []
     for epoch in range(hparams['epochs']):
-        train_history.append(train_net(model, train_dataloader, optimizer, scheduler))
+        train_history = train_net(model, train_dataloader, optimizer, scheduler)
         log(
             f"[Train] Epoch: {epoch+1}/{hparams['epochs']} - " + 
-            f"Loss: {train_history[-1]['loss']} | " + 
-            f"WER: {train_history[-1]['wer']} | " + 
-            f"SER: {train_history[-1]['ser']}",
+            f"Loss: {train_history['loss']} | " + 
+            f"WER: {train_history['wer']} | " + 
+            f"SER: {train_history['ser']}",
             log_file
         )
 
-        valid_history.append(valid_net(model, valid_dataloader))
+        valid_history = valid_net(model, valid_dataloader)
         log(
             f"[Valid] Epoch: {epoch+1}/{hparams['epochs']} - " + 
-            f"Loss: {valid_history[-1]['loss']} | " + 
-            f"WER: {valid_history[-1]['wer']} | " + 
-            f"SER: {valid_history[-1]['ser']}",
+            f"Loss: {valid_history['loss']} | " + 
+            f"WER: {valid_history['wer']} | " + 
+            f"SER: {valid_history['ser']}",
             log_file
         )
         
