@@ -36,6 +36,8 @@ def train_net(model, train_dataloader, optimizer, scheduler):
             epoch_wer += wer
             epoch_ser += ser
 
+        torch.cuda.empty_cache()
+
     return {
         'loss': epoch_loss / len(train_dataloader),
         'wer': epoch_wer / len(train_dataloader),
@@ -60,6 +62,8 @@ def valid_net(model, valid_dataloader):
             epoch_loss += loss_val
             epoch_wer += wer
             epoch_ser += ser
+
+        torch.cuda.empty_cache()
 
     return {
         'loss': epoch_loss / len(valid_dataloader),
