@@ -2,12 +2,13 @@ import torch
 from utils.io import read_mat_hdf5, read_melspectrogram_from_batch
 from WordTokenizer import word_tokenizer
 
-def get_melspectrogram(batch):
+def get_melspectrogram(batch, max_length=None):
     # read melspectrogram features with shape (features, time)
     melspectrogram_features = read_melspectrogram_from_batch(batch)
 
     # determine the maximum length of melspectrogram features in the batch
-    max_length = max(features.shape[1] for features in melspectrogram_features)
+    if max_length is None:
+        max_length = max(features.shape[1] for features in melspectrogram_features)
 
     # pad melspectrogram features with zeros
     padded_melspectrogram_features = []
@@ -26,10 +27,10 @@ def get_melspectrogram(batch):
     # Stack padded melspectrogram features into a single tensor
     padded_melspectrogram_features = torch.stack(padded_melspectrogram_features)
 
-    # Add channel dimension to match CNN input shape
-    padded_melspectrogram_features = padded_melspectrogram_features.unsqueeze(1)
+    # trim to max length 
+    padded_melspectrogram_features = padded_melspectrogram_features[:, :, :max_length]
 
-    # the output now is (batch, channel, feature, time)
+    # the output now is (batch, feature, time)
     return padded_melspectrogram_features
 
 def get_text(batch, word_tokenizer, max_length=None):
@@ -64,10 +65,14 @@ def get_text(batch, word_tokenizer, max_length=None):
 
 def speech_recognition_collate_fn(batch):
     # read mfcc features 
-    melspectrogram_features = get_melspectrogram(batch)
+    melspectrogram_features = get_melspectrogram(batch, max_length=3000)
     # read and format text for training 
     text = get_text(batch, word_tokenizer)
+    # set tokens 
+    tokens = text[:, :-1]
+    # set labels 
+    labels = text[:, 1:]
 
-    return melspectrogram_features, text 
+    return melspectrogram_features, tokens, labels 
 
     

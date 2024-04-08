@@ -32,6 +32,7 @@ class ASRMelSpecDataset(Dataset):
         self.idx_to_utteranceid = {i: utterance_id for i, utterance_id in enumerate(self.data.keys())}
 
     def __len__(self):
+        return 500 
         return len(self.data)
 
     def __getitem__(self, idx):

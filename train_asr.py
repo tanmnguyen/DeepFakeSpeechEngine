@@ -5,15 +5,17 @@ import configs
 import argparse 
 
 from utils.io import log
-import torch.optim as optim
 from torch.utils.data import DataLoader
 from WordTokenizer import word_tokenizer
 from utils.batch import speech_recognition_collate_fn
 from datasets.ASRMelSpecDataset import ASRMelSpecDataset
-from models.SpeechRecognitionModel import SpeechRecognitionModel
+
+from models.whisper.model import ModelDimensions
+from models.ASRWhisper import ASRWhisper
 
 from utils.steps import train_net, valid_net
-from tqdm import tqdm
+
+import torch.optim as optim
 
 # create a directory to save the results
 str_time = time.strftime("%m-%d-%Y-%H-%M-%S")
@@ -26,68 +28,71 @@ log_file = os.path.join(result_dir, 'log.txt')
 def main(args):
     # load word tokenizer
     word_tokenizer.load(os.path.join(args.data, "lang_nosp", "words.txt"))
-
-    hparams = {
-        "n_cnn_layers": 3,
-        "rescnn_strides": [1, 2, 2],
-        "n_rnn_layers": 5,
-        "rnn_dim": 512,
-        "n_class": len(word_tokenizer),
-        "n_feats": 128,
-        "stride":2,
-        "dropout": 0.1,
-        "blank": word_tokenizer.word2idx[word_tokenizer.PAD],
-        "learning_rate": configs.speech_recognition_cfg['learning_rate'],
-        "batch_size": configs.speech_recognition_cfg['batch_size'],
-        "epochs": configs.speech_recognition_cfg['epochs']
-    }
     
     train_dataset = ASRMelSpecDataset(os.path.join(args.data, "train"))
     valid_dataset = ASRMelSpecDataset(os.path.join(args.data, "dev"))
 
     train_dataloader = DataLoader(
         train_dataset, 
-        batch_size=hparams['batch_size'],
+        batch_size=configs.speech_recognition_cfg['batch_size'],
         collate_fn=speech_recognition_collate_fn, 
         shuffle=True
     )
 
     valid_dataloader = DataLoader(
         valid_dataset, 
-        batch_size=hparams['batch_size'],
+        batch_size=configs.speech_recognition_cfg['batch_size'],
         collate_fn=speech_recognition_collate_fn, 
         shuffle=False
     )
 
-    model = SpeechRecognitionModel(
-        n_cnn_layers=hparams['n_cnn_layers'], 
-        rescnn_strides=hparams['rescnn_strides'],
-        n_rnn_layers=hparams['n_rnn_layers'], 
-        rnn_dim=hparams['rnn_dim'],
-        n_class=hparams['n_class'], 
-        n_feats=hparams['n_feats'], 
-        blank=hparams["blank"], 
-        stride=hparams['stride'], 
-        dropout=hparams['dropout']
+    dims = ModelDimensions(
+        n_mels=128, 
+        n_audio_ctx=1500, 
+        n_audio_state=384, 
+        n_audio_head=6, 
+        n_audio_layer=4, 
+        n_vocab=len(word_tokenizer), 
+        n_text_ctx=448, 
+        n_text_state=384, 
+        n_text_head=6, 
+        n_text_layer=4
+    )
+
+    model = ASRWhisper(
+        dims, 
+        pad_token=word_tokenizer.word2idx[word_tokenizer.PAD],
+        whisper_model_weight = "weights/asr/tiny_whisper_model.pth"
     ).to(configs.device)
 
     log(model, log_file)
     log(f"Device: {configs.device}", log_file)
     log(f"Number of parameters: {sum(p.numel() for p in model.parameters())}", log_file)
 
-    optimizer = optim.AdamW(model.parameters(), hparams['learning_rate'])
-    scheduler = optim.lr_scheduler.OneCycleLR(
-        optimizer,
-        max_lr=hparams['learning_rate'],
-        steps_per_epoch=int(len(train_dataloader)),
-        epochs=hparams['epochs'],
-        anneal_strategy='linear'
+    optimizer_grouped_parameters = [
+        {
+            "params": [p for n, p in model.named_parameters() 
+                        if not any(nd in n for nd in configs.speech_recognition_cfg['no_decay'])],
+            "weight_decay": 0.01,
+        },
+        {
+            "params": [p for n, p in model.named_parameters() 
+                        if any(nd in n for nd in configs.speech_recognition_cfg['no_decay'])],
+            "weight_decay": 0.0,
+        },
+    ]
+    
+    optimizer = optim.AdamW(optimizer_grouped_parameters, 
+        lr=configs.speech_recognition_cfg['learning_rate'], 
+        eps=1e-8
     )
 
-    for epoch in range(hparams['epochs']):
-        train_history = train_net(model, train_dataloader, optimizer, scheduler, log_file)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=len(train_dataloader) * 3, gamma=0.85)
+
+    for epoch in range(configs.speech_recognition_cfg['epochs']):
+        train_history = train_net(model, train_dataloader, scheduler, optimizer, log_file)
         log(
-            f"[Train] Epoch: {epoch+1}/{hparams['epochs']} - " + 
+            f"[Train] Epoch: {epoch+1}/{configs.speech_recognition_cfg['epochs']} - " + 
             f"Loss: {train_history['loss']} | " + 
             f"WER: {train_history['wer']} | " + 
             f"SER: {train_history['ser']}",
@@ -96,14 +101,14 @@ def main(args):
 
         valid_history = valid_net(model, valid_dataloader)
         log(
-            f"[Valid] Epoch: {epoch+1}/{hparams['epochs']} - " + 
+            f"[Valid] Epoch: {epoch+1}/{configs.speech_recognition_cfg['epochs']} - " + 
             f"Loss: {valid_history['loss']} | " + 
             f"WER: {valid_history['wer']} | " + 
             f"SER: {valid_history['ser']}",
             log_file
         )
         
-        torch.save(model.state_dict(), os.path.join(result_dir, f"asr_model_{epoch+1}.pt"))
+        torch.save(model.state_dict(), os.path.join(result_dir, f"asr_model_epoch_{epoch+1}.pt"))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')

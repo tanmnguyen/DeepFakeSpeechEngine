@@ -9,30 +9,39 @@ from tqdm import tqdm
 from utils.io import log
 from utils.metrics import compute_error_rate
 
-
 def assert_loss(loss_val):
     if math.isnan(loss_val) or math.isinf(loss_val):
         raise ValueError(f'Loss value is {loss_val}')
 
-def train_net(model, train_dataloader, optimizer, scheduler, log_file):
+def train_net(model, train_dataloader, scheduler, optimizer, log_file):
+    prev_lr = optimizer.param_groups[0]['lr']
+    log(f"Learning rate: {prev_lr}", log_file)
+
     model.train()
 
     epoch_loss, epoch_wer, epoch_ser = 0.0, 0.0, 0.0
-    for i, (mfcc, text) in enumerate(tqdm(train_dataloader)):
-        mfcc, text = mfcc.to(configs.device), text.to(configs.device)
+    for i, (features, tokens, labels) in enumerate(tqdm(train_dataloader)):
+        features, tokens, labels = features.to(configs.device), tokens.to(configs.device), labels.to(configs.device)
 
         optimizer.zero_grad()
-        loss, output = model.loss(mfcc, text)
+        loss, output = model.loss(features, tokens, labels)
 
         loss_val = loss.item()
         assert_loss(loss_val)
 
         loss.backward()
         optimizer.step()
-        scheduler.step()
+
+        if optimizer.param_groups[0]['lr'] >= configs.speech_recognition_cfg['min_lr']:
+            scheduler.step()
+
+        # detect if the scheduler is reducing the learning rate
+        if optimizer.param_groups[0]['lr'] != prev_lr:
+            prev_lr = optimizer.param_groups[0]['lr']
+            log(f"Learning rate: {prev_lr}", log_file)
 
         with torch.no_grad():
-            wer, ser = compute_error_rate(output, text)
+            wer, ser = compute_error_rate(output, labels)
             epoch_loss += loss_val
             epoch_wer += wer
             epoch_ser += ser
@@ -53,16 +62,16 @@ def valid_net(model, valid_dataloader):
     model.eval()
     
     epoch_loss, epoch_wer, epoch_ser = 0.0, 0.0, 0.0
-    for mfcc, text in tqdm(valid_dataloader):
-        mfcc, text = mfcc.to(configs.device), text.to(configs.device)
+    for features, tokens, labels in tqdm(valid_dataloader):
+        features, tokens, labels = features.to(configs.device), tokens.to(configs.device), labels.to(configs.device)
 
         with torch.no_grad():
-            loss, output = model.loss(mfcc, text)
+            loss, output = model.loss(features, tokens, labels)
 
             loss_val = loss.item()
             assert_loss(loss_val)
 
-            wer, ser = compute_error_rate(output, text)
+            wer, ser = compute_error_rate(output, labels)
             epoch_loss += loss_val
             epoch_wer += wer
             epoch_ser += ser

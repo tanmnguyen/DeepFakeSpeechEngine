@@ -15,11 +15,11 @@ def greedy_decode(output):
     return output 
 
 def compute_error_rate(output, labels):
-    # decode output 
-    decoded_output = greedy_decode(output)
+    # compute WER and SER for autogressive model 
+    preds = torch.argmax(output, dim=-1)
 
-    tot_words, wer, ser = 0.0, 0.0, 0.0
-    for i in range(decoded_output.shape[0]):
+    wer, ser, tot_words = 0.0, 0.0, 0.0
+    for i in range(preds.shape[0]):
         cnt_incorrects = 0
         for j in range(labels.shape[1]):
             # finish processing if EOS token is found
@@ -27,15 +27,15 @@ def compute_error_rate(output, labels):
                 break
             
             tot_words += 1
-            if decoded_output[i, j] != labels[i, j]:
+            if preds[i, j] != labels[i, j]:
                 cnt_incorrects += 1
 
         # update WER and SER
         wer += cnt_incorrects
         ser += 1 if cnt_incorrects > 0 else 0
-                
+
     # normalize WER and SER
     wer /= tot_words
-    ser /= decoded_output.shape[0]
+    ser /= preds.shape[0]
 
     return wer, ser
