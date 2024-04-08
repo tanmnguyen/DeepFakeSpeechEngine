@@ -18,6 +18,7 @@ docker-compose run .
 When the data preparation is ready, we can only use conda virtual environment instead of docker with the following dependencies (lighter):
 ```bash 
 conda install pytorch==2.2.1 torchvision==0.17.1 torchaudio==2.2.1 pytorch-cuda=11.8 -c pytorch -c nvidia
+pip install git+https://github.com/openai/whisper.git
 pip install -r requirements.txt
 ```
 ## Train 

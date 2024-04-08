@@ -9,5 +9,5 @@ speech_recognition_cfg = {
     'min_lr': 1e-5,
 }
 result_dir = 'results'
-# device = 'cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu'
-device = 'cpu'
+device = 'cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu'
+# device = 'cpu'
