@@ -6,7 +6,6 @@ import argparse
 
 from utils.io import log
 from torch.utils.data import DataLoader
-from WordTokenizer import word_tokenizer
 from utils.batch import speech_recognition_collate_fn
 from datasets.ASRMelSpecDataset import ASRMelSpecDataset
 
@@ -26,10 +25,7 @@ os.makedirs(result_dir, exist_ok=True)
 log_file = os.path.join(result_dir, 'log.txt')
 
 def main(args):
-    # load word tokenizer
-    word_tokenizer.load(os.path.join(args.data, "lang_nosp", "words.txt"))
-    
-    train_dataset = ASRMelSpecDataset(os.path.join(args.data, "train"))
+    train_dataset = ASRMelSpecDataset(os.path.join(args.data, "test"))
     valid_dataset = ASRMelSpecDataset(os.path.join(args.data, "dev"))
 
     train_dataloader = DataLoader(
@@ -47,12 +43,12 @@ def main(args):
     )
 
     dims = ModelDimensions(
-        n_mels=128, 
+        n_mels=80, 
         n_audio_ctx=1500, 
         n_audio_state=384, 
         n_audio_head=6, 
         n_audio_layer=4, 
-        n_vocab=len(word_tokenizer), 
+        n_vocab=51864, 
         n_text_ctx=448, 
         n_text_state=384, 
         n_text_head=6, 
@@ -61,13 +57,14 @@ def main(args):
 
     model = ASRWhisper(
         dims, 
-        pad_token=word_tokenizer.word2idx[word_tokenizer.PAD],
+        pad_token=configs.speech_recognition_cfg['tokenizer'].eot,
         whisper_model_weight = "weights/asr/tiny_whisper_model.pth"
     ).to(configs.device)
 
     log(model, log_file)
     log(f"Device: {configs.device}", log_file)
     log(f"Number of parameters: {sum(p.numel() for p in model.parameters())}", log_file)
+
 
     optimizer_grouped_parameters = [
         {
@@ -87,7 +84,11 @@ def main(args):
         eps=1e-8
     )
 
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=len(train_dataloader) * 3, gamma=0.85)
+    scheduler = torch.optim.lr_scheduler.StepLR(
+        optimizer, 
+        step_size=len(train_dataloader) * 5, 
+        gamma=configs.speech_recognition_cfg['scheduler_gamma']
+    )
 
     for epoch in range(configs.speech_recognition_cfg['epochs']):
         train_history = train_net(model, train_dataloader, scheduler, optimizer, log_file)

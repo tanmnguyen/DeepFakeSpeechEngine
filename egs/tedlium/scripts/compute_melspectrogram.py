@@ -23,6 +23,7 @@ def compute_spectrogram(hdf5_path: str, segment_dict, wav_dict):
                 melspectrogram = librosa.feature.melspectrogram(
                     y=segment, 
                     sr=sr, 
+                    n_mels=80,
                     n_fft=512,
                     hop_length=160,
                     fmin=0,

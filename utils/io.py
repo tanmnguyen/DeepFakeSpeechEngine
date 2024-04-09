@@ -129,7 +129,7 @@ def read_mat_hdf5(hdf5_file_path: str, utterance_id: str):
         return hf[utterance_id][:]
     
 
-def read_melspectrogram_from_batch(batch):
+def read_melspectrogram_from_batch(batch, max_length=None):
     # this function optimize reading by minimizing file access operations
 
     # read all melspectrogram paths and utterance ids
@@ -147,7 +147,10 @@ def read_melspectrogram_from_batch(batch):
             for utterance_id in file2utterance_id[melspec_path]:
                 if utterance_id not in hf:
                     raise ValueError(f"utterance_id {utterance_id} not found in the HDF5 file {melspec_path}!")
-                melspectrogram_features.append(hf[utterance_id][:])
+                mel = hf[utterance_id][:]
+                if max_length is not None:
+                    mel = mel[:, :max_length]
+                melspectrogram_features.append(mel)
 
 
     return melspectrogram_features

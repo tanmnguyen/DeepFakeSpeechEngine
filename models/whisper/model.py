@@ -210,7 +210,6 @@ class TextDecoder(nn.Module):
         for block in self.blocks:
             x = block(x, xa, mask=self.mask, kv_cache=kv_cache)
         x = self.ln(x)
-        print('checking', x.shape)
         logits = (
             x @ torch.transpose(self.token_embedding.weight.to(x.dtype), 0, 1)
         ).float()

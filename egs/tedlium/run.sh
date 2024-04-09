@@ -75,21 +75,21 @@ train_lm=false
 #   local/format_lms.sh
 # fi
 
-# # Make mel spectrogram features 
-# if [ $stage -le 6 ]; then
-#   for set in test dev train; do
-#     dir=data/$set
-#     python scripts/compute_melspectrogram.py --data $dir --nprocs 30 
-#   done
-# fi
-
-# Make mfcc features 
-if [ $stage -le 7 ]; then
+# Make mel spectrogram features 
+if [ $stage -le 6 ]; then
   for set in test dev train; do
     dir=data/$set
-    python scripts/compute_mfcc.py --data $dir --nprocs 30
+    python scripts/compute_melspectrogram.py --data $dir --nprocs 30 
   done
 fi
+
+# Make mfcc features 
+# if [ $stage -le 7 ]; then
+#   for set in test dev train; do
+#     dir=data/$set
+#     python scripts/compute_mfcc.py --data $dir --nprocs 30
+#   done
+# fi
 
 # Fbank features extraction 
 # if [ $stage -le 6 ]; then

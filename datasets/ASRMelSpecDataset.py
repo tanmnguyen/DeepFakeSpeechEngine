@@ -13,7 +13,7 @@ class ASRMelSpecDataset(Dataset):
                 utterance_id, path = line.split()
                 self.data[utterance_id] = {
                     "utterance_id": utterance_id,
-                    "melspec_path": path,
+                    "melspec_path": os.path.join(data_path, "data", path.split('/')[-1]),
                     "text": "",
                 }
 

@@ -1,41 +1,73 @@
 import sys 
 sys.path.append('../')
 
-import torch 
-from WordTokenizer import word_tokenizer
-
-def greedy_decode(output):
-    output = output.argmax(dim=-1) # (sequence, batch)
-    output = output.permute(1, 0)  # (batch, sequence)
-    for i in range(output.shape[0]):
-        dec = torch.unique_consecutive(output[i])
-        dec = dec[dec != word_tokenizer.word2idx[word_tokenizer.PAD]]
-        output[i, :len(dec)] = dec
-        output[i, len(dec):] = word_tokenizer.word2idx[word_tokenizer.PAD]
-    return output 
+import configs 
 
 def compute_error_rate(output, labels):
-    # compute WER and SER for autogressive model 
-    preds = torch.argmax(output, dim=-1)
+    # get tokenizer
+    tokenizer = configs.speech_recognition_cfg['tokenizer']
+
+    # get normalizer 
+    normalizer = configs.speech_recognition_cfg['normalizer']
+
+    # greedy decoding
+    output = output.argmax(dim=-1)
 
     wer, ser, tot_words = 0.0, 0.0, 0.0
-    for i in range(preds.shape[0]):
+    for i in range(output.shape[0]): # batch dim 
         cnt_incorrects = 0
-        for j in range(labels.shape[1]):
+        for j in range(labels.shape[1]): # seq len dim 
             # finish processing if EOS token is found
-            if labels[i,j] == word_tokenizer.word2idx[word_tokenizer.EOS]:
+            if labels[i,j] == tokenizer.eot:
                 break
             
             tot_words += 1
-            if preds[i, j] != labels[i, j]:
+            pred_word = normalizer(tokenizer.decode([output[i, j].item()]))
+            true_word = normalizer(tokenizer.decode([labels[i, j].item()]))
+            if pred_word != true_word:
                 cnt_incorrects += 1
 
         # update WER and SER
         wer += cnt_incorrects
         ser += 1 if cnt_incorrects > 0 else 0
 
+        # debug 
+        # if cnt_incorrects > 0:
+        #     pred_sent = normalizer(tokenizer.decode(output[i]))
+        #     true_sent = normalizer(tokenizer.decode(labels[i]))
+        #     print(f"True: {true_sent}")
+        #     print(f"Pred: {pred_sent}")
+
     # normalize WER and SER
     wer /= tot_words
-    ser /= preds.shape[0]
+    ser /= output.shape[0]
 
     return wer, ser
+
+
+
+# print(features.shape, tokens.shape, labels.shape)
+# print(labels[0])
+# tmp = labels[0] 
+# tmp[tmp == -100] = tokenizer.eot
+# print(tmp)
+# print("labels", tokenizer.decode(tmp))
+
+# results = model.decode(features[0].unsqueeze(0))
+# print(results)
+
+# exit(0)
+# results = model(features, tokens)
+# results = torch.argmax(results, dim=-1)
+
+# for res in results:
+#     res[res == -100] = tokenizer.eot
+#     print(res)
+#     text = tokenizer.decode(res)
+#     print(text)
+#     break
+# results = results.argmax(-1)
+# print("results", results.shape)
+# tmp = results[0]
+# tmp[tmp == -100] = tokenizer.eot
+# print("output", tokenizer.decode(tmp))

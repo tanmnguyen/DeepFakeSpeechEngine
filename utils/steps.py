@@ -9,6 +9,8 @@ from tqdm import tqdm
 from utils.io import log
 from utils.metrics import compute_error_rate
 
+tokenizer = configs.speech_recognition_cfg['tokenizer']
+
 def assert_loss(loss_val):
     if math.isnan(loss_val) or math.isinf(loss_val):
         raise ValueError(f'Loss value is {loss_val}')
