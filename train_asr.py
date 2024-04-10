@@ -25,7 +25,7 @@ os.makedirs(result_dir, exist_ok=True)
 log_file = os.path.join(result_dir, 'log.txt')
 
 def main(args):
-    train_dataset = ASRMelSpecDataset(os.path.join(args.data, "test"))
+    train_dataset = ASRMelSpecDataset(os.path.join(args.data, "train"))
     valid_dataset = ASRMelSpecDataset(os.path.join(args.data, "dev"))
 
     train_dataloader = DataLoader(

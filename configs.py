@@ -8,7 +8,7 @@ decode_option = whisper.DecodingOptions(language="en", without_timestamps=True)
 speech_recognition_cfg = {
     'batch_size': 16,
     'epochs': 30,
-    'learning_rate': 1e-3,
+    'learning_rate': 1e-4,
     'no_decay': ["bias", "LayerNorm.weight"],
     'min_lr': 1e-5,
     'scheduler_gamma': 0.9,

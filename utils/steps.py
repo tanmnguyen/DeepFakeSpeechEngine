@@ -16,8 +16,6 @@ def assert_loss(loss_val):
         raise ValueError(f'Loss value is {loss_val}')
 
 def train_net(model, train_dataloader, scheduler, optimizer, log_file):
-    prev_lr = optimizer.param_groups[0]['lr']
-    log(f"Learning rate: {prev_lr}", log_file)
 
     model.train()
 
@@ -37,11 +35,6 @@ def train_net(model, train_dataloader, scheduler, optimizer, log_file):
         if optimizer.param_groups[0]['lr'] >= configs.speech_recognition_cfg['min_lr']:
             scheduler.step()
 
-        # detect if the scheduler is reducing the learning rate
-        if optimizer.param_groups[0]['lr'] != prev_lr:
-            prev_lr = optimizer.param_groups[0]['lr']
-            log(f"Learning rate: {prev_lr}", log_file)
-
         with torch.no_grad():
             wer, ser = compute_error_rate(output, labels)
             epoch_loss += loss_val
@@ -50,8 +43,11 @@ def train_net(model, train_dataloader, scheduler, optimizer, log_file):
 
         torch.cuda.empty_cache()
 
-        if i % 500 == 0:
-            log(f"Loss: {epoch_loss / (i+1)} | WER: {epoch_wer / (i+1)} | SER: {epoch_ser / (i+1)}", log_file)
+        if i % 100 == 0:
+            log(f"Loss: {epoch_loss / (i+1)} " + \
+                f"| WER: {epoch_wer / (i+1)} " + \
+                f"| SER: {epoch_ser / (i+1)} " + \
+                f"| LR: {optimizer.param_groups[0]['lr']}", log_file)
 
     return {
         'loss': epoch_loss / len(train_dataloader),
