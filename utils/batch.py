@@ -91,4 +91,10 @@ def speech_recognition_collate_fn(batch):
 
     return melspectrogram_features, tokens, labels 
 
-    
+def speaker_recognition_collate_fn(batch):
+    # read mfcc features 
+    melspectrogram_features = get_melspectrogram(batch, max_length=3000)
+    # read and format text for training 
+    speaker_labels = torch.tensor([item['speaker_id'] for item in batch])
+
+    return melspectrogram_features, speaker_labels

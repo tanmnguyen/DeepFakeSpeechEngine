@@ -22,9 +22,12 @@ pip install git+https://github.com/openai/whisper.git
 pip install -r requirements.txt
 ```
 ## Train 
-Train ASR model 
+Train speech recognition model 
 ```bash 
 CUDA_VISIBLE_DEVICES=0 python train_asr.py --data egs/tedlium/data 
 ```
-
+Train Speaker Recognition model 
+```bash 
+python train_spk_recognition.py --data egs/tedlium/data/
+```
 kaldi/src/featbin/compute-spectrogram-feats --output-format=kaldi "scp:egs/tedlium/data/train/wav.scp" "ark:egs/tedlium/data/train/spectrogram_feats.ark"

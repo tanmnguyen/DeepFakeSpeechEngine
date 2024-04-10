@@ -12,13 +12,13 @@ from datasets.ASRMelSpecDataset import ASRMelSpecDataset
 from models.whisper.model import ModelDimensions
 from models.ASRWhisper import ASRWhisper
 
-from utils.steps import train_net, valid_net
+from utils.steps import train_asr_net, valid_asr_net
 
 import torch.optim as optim
 
 # create a directory to save the results
 str_time = time.strftime("%m-%d-%Y-%H-%M-%S")
-result_dir = os.path.join(configs.result_dir, f'{str_time}')
+result_dir = os.path.join(configs.speech_recognition_cfg["result_dir"], f'{str_time}')
 os.makedirs(result_dir, exist_ok=True)
 
 # define log file 
@@ -91,7 +91,7 @@ def main(args):
     )
 
     for epoch in range(configs.speech_recognition_cfg['epochs']):
-        train_history = train_net(model, train_dataloader, scheduler, optimizer, log_file)
+        train_history = train_asr_net(model, train_dataloader, scheduler, optimizer, log_file)
         log(
             f"[Train] Epoch: {epoch+1}/{configs.speech_recognition_cfg['epochs']} - " + 
             f"Loss: {train_history['loss']} | " + 
@@ -100,7 +100,7 @@ def main(args):
             log_file
         )
 
-        valid_history = valid_net(model, valid_dataloader)
+        valid_history = valid_asr_net(model, valid_dataloader)
         log(
             f"[Valid] Epoch: {epoch+1}/{configs.speech_recognition_cfg['epochs']} - " + 
             f"Loss: {valid_history['loss']} | " + 

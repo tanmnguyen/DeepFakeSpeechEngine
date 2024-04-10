@@ -15,7 +15,7 @@ def assert_loss(loss_val):
     if math.isnan(loss_val) or math.isinf(loss_val):
         raise ValueError(f'Loss value is {loss_val}')
 
-def train_net(model, train_dataloader, scheduler, optimizer, log_file):
+def train_asr_net(model, train_dataloader, scheduler, optimizer, log_file):
 
     model.train()
 
@@ -56,7 +56,7 @@ def train_net(model, train_dataloader, scheduler, optimizer, log_file):
     }
 
 
-def valid_net(model, valid_dataloader):
+def valid_asr_net(model, valid_dataloader):
     model.eval()
     
     epoch_loss, epoch_wer, epoch_ser = 0.0, 0.0, 0.0
@@ -80,4 +80,62 @@ def valid_net(model, valid_dataloader):
         'loss': epoch_loss / len(valid_dataloader),
         'wer': epoch_wer / len(valid_dataloader),
         'ser': epoch_ser / len(valid_dataloader)
+    }
+
+
+# train speaker recognition model
+def train_spk_net(model, train_dataloader, accuracy, criterion, scheduler, optimizer, log_file):
+    model.train()
+
+    epoch_loss, epoch_acc = 0.0, 0.0
+    for i, (features, labels) in enumerate(tqdm(train_dataloader)):
+        features, labels = features.to(configs.device), labels.to(configs.device)
+
+        optimizer.zero_grad()
+        preds = model(features)
+
+        loss = criterion(preds, labels)
+
+        loss.backward()
+        optimizer.step()
+
+        if optimizer.param_groups[0]['lr'] >= configs.speech_recognition_cfg['min_lr']:
+            scheduler.step()
+
+        with torch.no_grad():
+            acc = accuracy(preds, labels)
+            epoch_loss += loss.item()
+            epoch_acc += acc
+
+        torch.cuda.empty_cache()
+
+        if i % 100 == 0:
+            log(f"Loss: {epoch_loss / (i+1)} " + \
+                f"| Accuracy: {epoch_acc / (i+1)} " + \
+                f"| LR: {optimizer.param_groups[0]['lr']}", log_file)
+
+
+    return {
+        'loss': epoch_loss / len(train_dataloader),
+        'accuracy': epoch_acc / len(train_dataloader)
+    }
+
+def valid_spk_net(model, valid_dataloader, accuracy, criterion):
+    model.eval()
+
+    epoch_loss, epoch_acc = 0.0, 0.0
+    for i, (features, labels) in enumerate(tqdm(valid_dataloader)):
+        with torch.no_grad():
+            features, labels = features.to(configs.device), labels.to(configs.device)
+            preds = model(features)
+            loss = criterion(preds, labels)
+            acc = accuracy(preds, labels)
+            epoch_loss += loss.item()
+            epoch_acc += acc
+
+        torch.cuda.empty_cache()
+
+    return {
+        'loss': epoch_loss / len(valid_dataloader),
+        'accuracy': epoch_acc / len(valid_dataloader)
     }
