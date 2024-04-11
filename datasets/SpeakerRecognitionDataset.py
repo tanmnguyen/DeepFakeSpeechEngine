@@ -39,7 +39,6 @@ class SpeakerRecognitionDataset(Dataset):
         self.num_classes = len(self.spk2idx)
 
     def __len__(self):  
-        return 100
         return len(self.data)
     
     def __getitem__(self, idx):
