@@ -28,6 +28,6 @@ CUDA_VISIBLE_DEVICES=0 python train_asr.py --data egs/tedlium/data
 ```
 Train Speaker Recognition model 
 ```bash 
-python train_spk_recognition.py --data egs/tedlium/data/
+CUDA_VISIBLE_DEVICES=1 python train_spk_recognition.py --data egs/tedlium/data/
 ```
 kaldi/src/featbin/compute-spectrogram-feats --output-format=kaldi "scp:egs/tedlium/data/train/wav.scp" "ark:egs/tedlium/data/train/spectrogram_feats.ark"
