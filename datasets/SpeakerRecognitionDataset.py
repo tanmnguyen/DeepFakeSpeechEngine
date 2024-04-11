@@ -12,7 +12,8 @@ class SpeakerRecognitionDataset(Dataset):
         with open(os.path.join(data_path, "utt2spk"), 'r') as f:
             for line in f:
                 utterance_id, speaker_id = line.split()
-                
+                speaker_id = speaker_id.split("-")[0].split("_")[0]
+
                 # speaker to speaker train option
                 if train_option[0] == "spk2spk":
                     if speaker_id in train_option[1:]:
@@ -35,7 +36,7 @@ class SpeakerRecognitionDataset(Dataset):
         self.data = list(self.data.values())
 
         # determine num class 
-        self.num_classes = max(self.spk2idx.values()) + 1
+        self.num_classes = max(self.spk2idx.values())
 
     def __len__(self):  
         return len(self.data)

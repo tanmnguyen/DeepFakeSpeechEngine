@@ -32,7 +32,7 @@ speaker_recognition_cfg = {
     'scheduler_gamma': 0.9,
     "result_dir": "results/spk",
     "speaker_ids": "train/utt2spk",
-    # "train_option": ["spk2spk", "AalaElKhani_2016X-5", "AlanEustace_2015-4"], # first train option speaker to speaker 
+    # "train_option": ["spk2spk", "AalaElKhani", "AlanEustace"], # first train option speaker to speaker 
     "train_option": ["spk2spk", *spks[:]], # first train option speaker to speaker
 }
 
