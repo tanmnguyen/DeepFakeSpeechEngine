@@ -10,9 +10,11 @@ import torch.optim as optim
 
 from torchmetrics import Accuracy
 from torch.utils.data import DataLoader
+from datasets.SpeakerRecognitionDataset import SpeakerRecognitionDataset
+
+from models.SPKConv import SPKConv
 from models.SPKWhisper import SPKWhisper
 from models.whisper.model import ModelDimensions
-from datasets.SpeakerRecognitionDataset import SpeakerRecognitionDataset
 
 from utils.io import log
 from utils.steps import train_spk_net, valid_spk_net
@@ -59,11 +61,13 @@ def main(args):
         n_text_layer=4
     )
 
-    model = SPKWhisper(
-        dims, 
-        num_classes = dataset.num_classes,
-        whisper_model_weight = "weights/asr/tiny_whisper_model.pth"
-    ).to(configs.device)
+    # model = SPKWhisper(
+    #     dims, 
+    #     num_classes = dataset.num_classes,
+    #     whisper_model_weight = "weights/asr/tiny_whisper_model.pth"
+    # ).to(configs.device)
+
+    model = SPKConv(num_classes=dataset.num_classes).to(configs.device)
 
     log(model, log_file)
     log(f"Device: {configs.device}", log_file)
