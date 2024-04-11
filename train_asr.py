@@ -65,7 +65,9 @@ def main(args):
     log(f"Device: {configs.device}", log_file)
     log(f"Number of parameters: {sum(p.numel() for p in model.parameters())}", log_file)
 
-
+    if args.weight:
+        model.load_state_dict(torch.load(args.weight))
+        
     optimizer_grouped_parameters = [
         {
             "params": [p for n, p in model.named_parameters() 
@@ -118,6 +120,11 @@ if __name__ == '__main__':
                         '--data',
                         required=True,
                         help="path to kaldi data format directory. This should contains dev, test, and train folders")
+    
+    parser.add_argument('-weight',
+                        '--weight',
+                        required=True,
+                        help="path to pre-trained weight")
 
 
     args = parser.parse_args()
