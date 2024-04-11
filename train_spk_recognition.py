@@ -81,7 +81,7 @@ def main(args):
     )
 
     criterion = torch.nn.CrossEntropyLoss()
-    accuracy = Accuracy(task="multiclass", num_classes=dataset.num_classes)
+    accuracy = Accuracy(task="multiclass", num_classes=dataset.num_classes).to(configs.device)
 
     # train_spk_net(model, train_dataloader, accuracy, criterion, scheduler, optimizer, log_file)
     for epoch in range(configs.speaker_recognition_cfg['epochs']):

@@ -4,3 +4,4 @@ torchvision
 torchaudio
 tqdm
 h5py
+torchmetrics
