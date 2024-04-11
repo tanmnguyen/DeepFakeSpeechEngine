@@ -34,41 +34,37 @@ class SPKConv(nn.Module):
         super(SPKConv, self).__init__()
 
         self.features = nn.Sequential(
-            nn.Conv1d(80, 160, kernel_size=3, padding=1),
+            nn.Conv1d(80, 160, kernel_size=7, padding=1),
             nn.BatchNorm1d(160),
             nn.ReLU(),
-            nn.MaxPool1d(2),
+            nn.MaxPool1d(4),
 
-            nn.Conv1d(160, 160, kernel_size=3, padding=1),
-            nn.BatchNorm1d(160),
-            nn.ReLU(),
-            nn.MaxPool1d(2),
-
-            nn.Conv1d(160, 256, kernel_size=3, padding=1),
+            nn.Conv1d(160, 256, kernel_size=7, padding=1),
             nn.BatchNorm1d(256),
             nn.ReLU(),
-            nn.MaxPool1d(2),
+            nn.MaxPool1d(4),
 
-            nn.Conv1d(256, 256, kernel_size=3, padding=1),
-            nn.BatchNorm1d(256),
-            nn.ReLU(),
-            nn.MaxPool1d(2),
-
-            nn.Conv1d(256, 512, kernel_size=3, padding=1),
+            nn.Conv1d(256, 512, kernel_size=7, padding=1),
             nn.BatchNorm1d(512),
             nn.ReLU(),
-            nn.MaxPool1d(2),
+            nn.MaxPool1d(4),
 
-            nn.Conv1d(512, 512, kernel_size=3, padding=1),
+            nn.Conv1d(512, 512, kernel_size=7, padding=1),
             nn.BatchNorm1d(512),
             nn.ReLU(),
-            nn.MaxPool1d(2),
+            nn.MaxPool1d(4),
+
+            # nn.Conv1d(512, 512, kernel_size=3, padding=1),
+            # nn.BatchNorm1d(512),
+            # nn.ReLU(),
+            # nn.MaxPool1d(4),
         )
         # print(self.features(torch.randn(1, 80, 1500)).shape)
 
         b, c, t = self.features(torch.randn(1, 80, 3000)).shape
 
         self.attnPool = AttentionPoolingNet(c, c)
+        self.dropout = nn.Dropout(0.5)
         self.classifier = nn.Linear(c, num_classes)
 
     def forward(self, mel):
@@ -77,6 +73,7 @@ class SPKConv(nn.Module):
 
         # attention pooling
         x = self.attnPool(x)
+        x = self.dropout(x)
 
         # classification
         x = self.classifier(x)

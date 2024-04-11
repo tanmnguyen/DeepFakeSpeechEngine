@@ -31,8 +31,12 @@ log_file = os.path.join(result_dir, 'log.txt')
 torch.manual_seed(3001)
 def main(args):
 
-    dataset = SpeakerRecognitionDataset(os.path.join(args.data, "train"))
-    train_dataset, valid_dataset = torch.utils.data.random_split(dataset, [0.9, 0.1])
+    dataset = SpeakerRecognitionDataset(os.path.join(args.data, "train"), configs.speaker_recognition_cfg['train_option'])
+    
+    if len(dataset) <= 500:
+        train_dataset, valid_dataset = torch.utils.data.random_split(dataset, [0.5, 0.5])
+    else:
+        train_dataset, valid_dataset = torch.utils.data.random_split(dataset, [0.8, 0.2])
 
     train_dataloader = DataLoader(
         train_dataset, 
@@ -71,6 +75,8 @@ def main(args):
 
     log(model, log_file)
     log(f"Device: {configs.device}", log_file)
+    log(f"Train set size: {len(train_dataset)}", log_file)
+    log(f"Valid set size: {len(valid_dataset)}", log_file)
     log(f"Number of parameters: {sum(p.numel() for p in model.parameters())}", log_file)
 
     optimizer = optim.AdamW(model.parameters(), 

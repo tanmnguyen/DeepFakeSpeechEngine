@@ -2,6 +2,7 @@ import torch
 import whisper 
 
 from whisper.normalizers import EnglishTextNormalizer
+from files.spk2spk import spks 
 
 # speech recognition training configurations 
 decode_option = whisper.DecodingOptions(language="en", without_timestamps=True)
@@ -26,11 +27,13 @@ speech_recognition_cfg = {
 speaker_recognition_cfg = {
     'batch_size': 16,
     'epochs': 30,
-    'learning_rate': 1e-3,
+    'learning_rate': 1e-4,
     'min_lr': 1e-7,
     'scheduler_gamma': 0.9,
     "result_dir": "results/spk",
     "speaker_ids": "train/utt2spk",
+    # "train_option": ["spk2spk", "AalaElKhani_2016X-5", "AlanEustace_2015-4"], # first train option speaker to speaker 
+    "train_option": ["spk2spk", *spks[:]], # first train option speaker to speaker
 }
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'

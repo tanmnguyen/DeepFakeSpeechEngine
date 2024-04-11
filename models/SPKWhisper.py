@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn 
 
 from .whisper.model import Whisper
@@ -11,15 +12,20 @@ class SPKWhisper(nn.Module):
         # define encoder 
         self.encoder = whisper_model.encoder
 
+        self.flatten = nn.Flatten()
+
         # define the classifier 
-        self.classifier = nn.Linear(dims.n_audio_state, num_classes)
+        self.classifier = nn.Linear(1500 * 384, num_classes)
 
     def forward(self, mel):
         # feature extraction
-        x = self.encoder(mel)
+        with torch.no_grad():
+            x = self.encoder(mel)
 
-        # compute the average across time 
-        x = x.mean(dim=1)
+        # print(x.shape)
+
+        # flatten the output
+        x = self.flatten(x)
 
         # classification
         x = self.classifier(x)
