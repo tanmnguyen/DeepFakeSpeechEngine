@@ -6,7 +6,7 @@ from whisper.normalizers import EnglishTextNormalizer
 # speech recognition training configurations 
 decode_option = whisper.DecodingOptions(language="en", without_timestamps=True)
 speech_recognition_cfg = {
-    'batch_size': 40,
+    'batch_size': 16,
     'epochs': 30,
     'learning_rate': 1e-5,
     'no_decay': ["bias", "LayerNorm.weight"],
