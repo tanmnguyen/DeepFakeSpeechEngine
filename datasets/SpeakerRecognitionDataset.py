@@ -17,8 +17,11 @@ class SpeakerRecognitionDataset(Dataset):
                 # speaker to speaker train option
                 if train_option[0] == "spk2spk":
                     if speaker_id in train_option[1:]:
-                        self.spk2idx[speaker_id] = len(self.spk2idx)
+                        if speaker_id not in self.spk2idx:
+                            self.spk2idx[speaker_id] = len(self.spk2idx)
                         self.utt2spkid[utterance_id] = self.spk2idx[speaker_id]
+
+                        
 
         # read mel-spectrogram features from hdf5 file 
         with open(os.path.join(data_path, "melspectrogram_utterance_mapping"), 'r') as f:
@@ -36,7 +39,7 @@ class SpeakerRecognitionDataset(Dataset):
         self.data = list(self.data.values())
 
         # determine num class 
-        self.num_classes = max(self.spk2idx.values())
+        self.num_classes = len(self.spk2idx)
 
     def __len__(self):  
         return len(self.data)
