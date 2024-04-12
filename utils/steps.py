@@ -178,6 +178,10 @@ def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, spk_m
                 melspectrogram_features.contiguous().view(tokens.shape[0], -1)
             )
 
+            gen_melspec = process_mel_spectrogram(gen_melspec)
+            spk_output = spk_model(gen_melspec)
+            asr_output = asr_model(gen_melspec, tokens)
+
         loss.backward()
         optimizer.step()
 
