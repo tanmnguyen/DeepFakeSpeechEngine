@@ -3,6 +3,7 @@ sys.path.append('../')
 
 import torch 
 import configs 
+import librosa
 import numpy as np
 
 from utils.io import read_melspectrogram_from_batch
@@ -14,16 +15,17 @@ def process_mel_spectrogram(mel_spec):
 
     return log_spec 
 
-def get_melspectrogram(batch, process = True, max_length=None):
+def to_db(mel_spec):
+    db = librosa.power_to_db(mel_spec)
+    return torch.tensor(db)
+
+def get_melspectrogram(batch, process_fn, max_length=None):
     # read melspectrogram features with shape (features, time)
     melspectrogram_features = read_melspectrogram_from_batch(batch, max_length)
 
     # process melspectrogram features 
-    if process:
-        melspectrogram_features = [process_mel_spectrogram(torch.from_numpy(features)) for features in melspectrogram_features]
-    else:
-        melspectrogram_features = [torch.from_numpy(features) for features in melspectrogram_features]
-        
+    melspectrogram_features = [process_fn(torch.from_numpy(features)) for features in melspectrogram_features]
+
     # determine the maximum length of melspectrogram features in the batch
     if max_length is None:
         max_length = max(features.shape[1] for features in melspectrogram_features)
@@ -88,7 +90,7 @@ def get_text(batch):
 
 def speech_recognition_collate_fn(batch):
     # read mfcc features 
-    melspectrogram_features = get_melspectrogram(batch, max_length=3000)
+    melspectrogram_features = get_melspectrogram(batch, process_fn=process_mel_spectrogram, max_length=3000)
     # read and format text for training 
     tokens, labels = get_text(batch)
 
@@ -96,7 +98,7 @@ def speech_recognition_collate_fn(batch):
 
 def speaker_recognition_collate_fn(batch):
     # read mfcc features 
-    melspectrogram_features = get_melspectrogram(batch, process=False, max_length=3000)
+    melspectrogram_features = get_melspectrogram(batch, process_fn=to_db, max_length=3000)
     # read and format text for training 
     speaker_labels = torch.tensor([item['speaker_id'] for item in batch])
 
