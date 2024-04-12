@@ -9,7 +9,7 @@ class MelGenerator(nn.Module):
             nn.TransformerEncoderLayer(d_model=input_channels, nhead=8, batch_first=True), # encoder layer 
             num_layers=6,
         )
-
+        
     def forward(self, x):
         # x shape: (batch_size, input_channels, seq_len)
 

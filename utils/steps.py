@@ -141,7 +141,7 @@ def valid_spk_net(model, valid_dataloader, accuracy, criterion):
         'accuracy': epoch_acc / len(valid_dataloader)
     }
 
-def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, spk_model, asr_model, log_file):
+def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, spk_model, asr_model, log_file, stage="mimic"):
     model.train() 
 
     epoch_loss, epoch_wer, epoch_ser, epoch_spk_acc = 0.0, 0.0, 0.0, 0.0
@@ -158,17 +158,23 @@ def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, spk_m
         optimizer.zero_grad()
         spk_model.zero_grad()
         asr_model.zero_grad()
-        
+
         gen_melspec = model(melspectrogram_features)
-        gen_melspec = process_mel_spectrogram(gen_melspec)
 
-        loss_spk, spk_output = spk_model.loss(gen_melspec, speaker_labels)
-        loss_asr, asr_output = asr_model.loss(gen_melspec, tokens, labels)
+        if stage != "deepfake":
+            gen_melspec = process_mel_spectrogram(gen_melspec)
 
-        # we want to minimize the loss of the speech recognition model 
-        # while maximizing the loss of the speaker recognition model
-        loss = loss_asr / loss_spk
-        
+            loss_spk, spk_output = spk_model.loss(gen_melspec, speaker_labels)
+            loss_asr, asr_output = asr_model.loss(gen_melspec, tokens, labels)
+
+            # we want to minimize the loss of the speech recognition model 
+            # while maximizing the loss of the speaker recognition model
+            loss = loss_asr / loss_spk
+            
+        elif stage == "mimic":
+            # here the criterion should be mse 
+            loss = torch.nn.MSELoss()(gen_melspec.view(tokens.shape[0], -1), melspectrogram_features.view(tokens.shape[0], -1))
+
         loss.backward()
         optimizer.step()
 
