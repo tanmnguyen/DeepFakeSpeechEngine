@@ -95,7 +95,7 @@ def speech_recognition_collate_fn(batch):
     return melspectrogram_features, tokens, labels 
 
 def speaker_recognition_collate_fn(batch):
-    melspectrogram_features = get_melspectrogram(batch, process_fn=to_db, max_length=3000)
+    melspectrogram_features = get_melspectrogram(batch, process_fn=process_mel_spectrogram, max_length=3000)
     speaker_labels = torch.tensor([item['speaker_id'] for item in batch])
 
     return melspectrogram_features, speaker_labels

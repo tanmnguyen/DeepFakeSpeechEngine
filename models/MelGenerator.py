@@ -6,8 +6,8 @@ class MelGenerator(nn.Module):
         super(MelGenerator, self).__init__()
         
         self.encoder = nn.TransformerEncoder(
-            nn.TransformerEncoderLayer(d_model=input_channels, nhead=8), # encoder layer 
-            num_layers=6
+            nn.TransformerEncoderLayer(d_model=input_channels, nhead=8, batch_first=True), # encoder layer 
+            num_layers=6,
         )
 
     def forward(self, x):

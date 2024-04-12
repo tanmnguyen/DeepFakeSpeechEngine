@@ -61,7 +61,7 @@ mel_generator_cfg = {
     'min_lr': 1e-7,
     'scheduler_gamma': 0.9,
     "result_dir": "results/gen",
-    "asr_weight": "weights/asr/tiny_whisper_model.pth",
+    "asr_weight": "weights/asr/asr_model.pt",
     "spk_weight": "weights/spk/spk_model.pth"
 }
 
