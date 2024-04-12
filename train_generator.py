@@ -49,14 +49,13 @@ def main(args):
     
     gen_model = MelGenerator(input_channels=80).to(configs.device)
     asr_model = load_asr(configs.mel_generator_cfg['asr_weight'])
-    # spk_model = load_spk(configs.mel_generator_cfg['spk_weight'], num_classes=dataset.num_classes)
-    spk_model = None 
+    spk_model = load_spk(configs.mel_generator_cfg['spk_weight'], num_classes=dataset.num_classes)
 
     # freeze the asr and spk model
     asr_model.eval()
     asr_model.requires_grad_(False)
-    # spk_model.eval()
-    # spk_model.requires_grad_(False)
+    spk_model.eval()
+    spk_model.requires_grad_(False)
 
 
     log(gen_model, log_file)
@@ -77,13 +76,15 @@ def main(args):
     )
 
     accuracy = Accuracy(task="multiclass", num_classes=dataset.num_classes).to(configs.device)
-    
+
     for epoch in range(configs.speaker_recognition_cfg['epochs']):
         train_history = train_gen_net(gen_model, train_dataloader, scheduler, optimizer, accuracy, spk_model, asr_model, log_file)
         log(
-            f"[Train] Epoch: {epoch+1}/{configs.mel_generator_cfg['epochs']} - " + 
-            f"Loss: {train_history['loss']} | " + 
-            f"Accuracy: {train_history['accuracy']}",
+            f"[Train] Epoch: {epoch+1}/{configs.mel_generator_cfg['epochs']} - " +
+            f"Loss: {train_history['loss']} | " +
+            f"WER: {train_history['wer']} | " +
+            f"SER: {train_history['ser']} | " +
+            f"Speaker Accuracy: {train_history['speaker_accuracy']}",
             log_file
         )
 
@@ -94,6 +95,8 @@ def main(args):
         #     f"Accuracy: {valid_history['accuracy']}",
         #     log_file
         # )
+
+        torch.save(gen_model.state_dict(), os.path.join(result_dir, f"gen_model_epoch_{epoch+1}.pt"))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')

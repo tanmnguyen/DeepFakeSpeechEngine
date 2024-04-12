@@ -63,7 +63,7 @@ mel_generator_cfg = {
     "result_dir": "results/gen",
     # "asr_weight": "weights/asr/asr_model.pt",
     "asr_weight": "weights/asr/tiny_whisper_model.pth",
-    "spk_weight": "weights/spk/spk_model.pth"
+    "spk_weight": "weights/spk/spk_model.pt"
 }
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'

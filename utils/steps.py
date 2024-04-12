@@ -148,6 +148,7 @@ def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, spk_m
     for i, (melspectrogram_features, tokens, labels, speaker_labels) in enumerate(tqdm(train_dataloader)):
 
         # melspec = process_mel_spectrogram(melspectrogram_features)
+ 
         melspectrogram_features, tokens, labels, speaker_labels = \
             melspectrogram_features.to(configs.device), \
             tokens.to(configs.device), \
@@ -156,6 +157,7 @@ def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, spk_m
 
         optimizer.zero_grad()
         gen_melspec = model(melspectrogram_features)
+        gen_melspec = process_mel_spectrogram(gen_melspec)
 
         loss_spk, spk_output = spk_model.loss(gen_melspec, speaker_labels)
         loss_asr, asr_output = asr_model.loss(gen_melspec, tokens, labels)
