@@ -1,5 +1,5 @@
 # num_spks = 1e9 # all 
-num_spks = 500
+num_spks = 100
 spks = set()
 
 with open("egs/tedlium/data/train/spk2utt", "r") as file:

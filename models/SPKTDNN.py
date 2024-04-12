@@ -11,15 +11,16 @@ class SPKTDNN(nn.Module):
             embed_dim=embed_dim,
             pooling_func=pooling_func
         )
-
+        self.dropout = nn.Dropout(0.3)
         self.fc = nn.Linear(embed_dim, num_classes)
 
     def forward(self, mel):
         x = rearrange(mel, 'b t c -> b c t')
-
         # compute embeddings
         x = self.encoder(x)
-
+        # apply dropout
+        x = self.dropout(x)
         # classification
         x = self.fc(x)
+
         return x
