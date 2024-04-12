@@ -53,9 +53,9 @@ def main(args):
 
     # freeze the asr and spk model
     asr_model.eval()
-    asr_model.requires_grad_(False)
+    # asr_model.requires_grad_(False)
     spk_model.eval()
-    spk_model.requires_grad_(False)
+    # spk_model.requires_grad_(False)
 
 
     log(gen_model, log_file)

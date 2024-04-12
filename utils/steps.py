@@ -156,6 +156,9 @@ def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, spk_m
             speaker_labels.to(configs.device)
 
         optimizer.zero_grad()
+        spk_model.zero_grad()
+        asr_model.zero_grad()
+        
         gen_melspec = model(melspectrogram_features)
         gen_melspec = process_mel_spectrogram(gen_melspec)
 
