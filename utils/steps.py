@@ -173,7 +173,10 @@ def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, spk_m
 
         elif stage == "mimic":
             # here the criterion should be mse 
-            loss = torch.nn.MSELoss()(gen_melspec.view(tokens.shape[0], -1), melspectrogram_features.view(tokens.shape[0], -1))
+            loss = torch.nn.MSELoss()(
+                gen_melspec.contiguous().view(tokens.shape[0], -1), 
+                melspectrogram_features.contiguous().view(tokens.shape[0], -1)
+            )
 
         loss.backward()
         optimizer.step()
