@@ -49,7 +49,7 @@ speaker_recognition_cfg = {
     "speaker_ids": "train/utt2spk",
     "train_option": {
         "option": "spk2spk",  # first train option speaker to speaker
-        "spk2idx": get_json("json/tedlium_train_spks.json", 70, shuffle=False)
+        "spk2idx": get_json("json/tedlium_train_spks.json", 50, shuffle=False)
     }, 
 }
 
