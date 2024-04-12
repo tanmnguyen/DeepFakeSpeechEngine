@@ -5,8 +5,11 @@ from torch.utils.data import Dataset
 class SpeakerRecognitionDataset(Dataset):
     def __init__(self, data_path: str, train_option):
         self.data = dict() 
-        self.spk2idx = dict()
         self.utt2spkid = dict()
+
+        self.spk2idx = dict()
+        for i, spk in enumerate(train_option[1:]):
+            self.spk2idx[spk] = i
 
         # read speaker id 
         with open(os.path.join(data_path, "utt2spk"), 'r') as f:
@@ -15,13 +18,8 @@ class SpeakerRecognitionDataset(Dataset):
                 speaker_id = speaker_id.split("-")[0].split("_")[0]
 
                 # speaker to speaker train option
-                if train_option[0] == "spk2spk":
-                    if speaker_id in train_option[1:]:
-                        if speaker_id not in self.spk2idx:
-                            self.spk2idx[speaker_id] = len(self.spk2idx)
+                if train_option[0] == "spk2spk" and speaker_id in self.spk2idx:
                         self.utt2spkid[utterance_id] = self.spk2idx[speaker_id]
-
-                        
 
         # read mel-spectrogram features from hdf5 file 
         with open(os.path.join(data_path, "melspectrogram_utterance_mapping"), 'r') as f:

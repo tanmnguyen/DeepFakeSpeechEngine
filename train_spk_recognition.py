@@ -20,6 +20,9 @@ from utils.io import log
 from utils.steps import train_spk_net, valid_spk_net
 from utils.batch import speaker_recognition_collate_fn
 
+
+from models.SPKTDNN import SPKTDNN
+
 # create a directory to save the results
 str_time = time.strftime("%m-%d-%Y-%H-%M-%S")
 result_dir = os.path.join(configs.speaker_recognition_cfg["result_dir"], f'{str_time}')
@@ -52,26 +55,28 @@ def main(args):
         shuffle=False
     )
 
-    dims = ModelDimensions(
-        n_mels=80, 
-        n_audio_ctx=1500, 
-        n_audio_state=384, 
-        n_audio_head=6, 
-        n_audio_layer=4, 
-        n_vocab=51864, 
-        n_text_ctx=448, 
-        n_text_state=384, 
-        n_text_head=6, 
-        n_text_layer=4
-    )
+    model = SPKTDNN(num_classes=dataset.num_classes).to(configs.device)
 
-    # model = SPKWhisper(
-    #     dims, 
-    #     num_classes = dataset.num_classes,
-    #     whisper_model_weight = "weights/asr/tiny_whisper_model.pth"
-    # ).to(configs.device)
+    # dims = ModelDimensions(
+    #     n_mels=80, 
+    #     n_audio_ctx=1500, 
+    #     n_audio_state=384, 
+    #     n_audio_head=6, 
+    #     n_audio_layer=4, 
+    #     n_vocab=51864, 
+    #     n_text_ctx=448, 
+    #     n_text_state=384, 
+    #     n_text_head=6, 
+    #     n_text_layer=4
+    # )
 
-    model = SPKConv(num_classes=dataset.num_classes).to(configs.device)
+    # # model = SPKWhisper(
+    # #     dims, 
+    # #     num_classes = dataset.num_classes,
+    # #     whisper_model_weight = "weights/asr/tiny_whisper_model.pth"
+    # # ).to(configs.device)
+
+    # model = SPKConv(num_classes=dataset.num_classes).to(configs.device)
 
     log(model, log_file)
     log(f"Device: {configs.device}", log_file)
