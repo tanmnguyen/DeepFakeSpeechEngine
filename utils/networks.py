@@ -1,4 +1,8 @@
+import sys 
+sys.path.append("../")
+
 import torch 
+import configs 
 
 def load_state_dict(model, weight_path):
     """
@@ -27,3 +31,53 @@ def load_state_dict(model, weight_path):
     model.load_state_dict(current_state_dict)
 
     return model 
+
+def load_asr(weight_path):
+    """
+    Load the ASR model.
+
+    Parameters:
+        weight_path (str): The path to the saved ASR model state dictionary.
+
+    Returns:
+        torch.nn.Module: The loaded ASR model.
+    """
+    from models.ASRWhisper import ASRWhisper
+    from models.whisper.model import ModelDimensions
+
+    dims = ModelDimensions(
+        n_mels=80, 
+        n_audio_ctx=1500, 
+        n_audio_state=384, 
+        n_audio_head=6, 
+        n_audio_layer=4, 
+        n_vocab=51864, 
+        n_text_ctx=448, 
+        n_text_state=384, 
+        n_text_head=6, 
+        n_text_layer=4
+    )
+
+    model = ASRWhisper(
+        dims, 
+        pad_token=configs.speech_recognition_cfg['tokenizer'].eot,
+        whisper_model_weight = "weights/asr/tiny_whisper_model.pth"
+    ).to(configs.device)
+    model = load_state_dict(model, weight_path)
+    return model
+
+def load_spk(weight_path, num_classes):
+    """
+    Load the speaker recognition model.
+
+    Parameters:
+        weight_path (str): The path to the saved speaker recognition model state dictionary.
+
+    Returns:
+        torch.nn.Module: The loaded speaker recognition model.
+    """
+    from models.SPKTDNN import SPKTDNN
+
+    model = SPKTDNN(num_classes=num_classes).to(configs.device)
+    model = load_state_dict(model, weight_path)
+    return model

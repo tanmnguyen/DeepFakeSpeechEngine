@@ -1,8 +1,9 @@
+import json 
 import torch 
 import whisper 
+import numpy as np
 
 from whisper.normalizers import EnglishTextNormalizer
-from files.spk2spk import spks 
 
 # speech recognition training configurations 
 decode_option = whisper.DecodingOptions(language="en", without_timestamps=True)
@@ -24,6 +25,20 @@ speech_recognition_cfg = {
     "result_dir": "results/asr"
 }
 
+def get_json(json_path, num_keys, shuffle=False):
+    with open(json_path, 'r') as f:
+        data = json.load(f)
+    # get the first num_keys keys
+    keys = list(data.keys())
+    # shuffle keys 
+    if shuffle:
+        keys = np.random.permutation(keys)
+    # build new json data 
+    keys = keys[:num_keys]
+    new_data = {key: data[key] for key in keys}
+
+    return new_data
+
 speaker_recognition_cfg = {
     'batch_size': 16,
     'epochs': 30,
@@ -32,8 +47,22 @@ speaker_recognition_cfg = {
     'scheduler_gamma': 0.9,
     "result_dir": "results/spk",
     "speaker_ids": "train/utt2spk",
-    # "train_option": ["spk2spk", "AalaElKhani", "AlanEustace"], # first train option speaker to speaker 
-    "train_option": ["spk2spk", *spks[:]], # first train option speaker to speaker
+    "train_option": {
+        "option": "spk2spk",  # first train option speaker to speaker
+        "spk2idx": get_json("json/tedlium_train_spks.json", 70, shuffle=False)
+    }, 
+}
+
+
+mel_generator_cfg = {
+    'batch_size': 16,
+    'epochs': 30,
+    'learning_rate': 1e-4,
+    'min_lr': 1e-7,
+    'scheduler_gamma': 0.9,
+    "result_dir": "results/gen",
+    "asr_weight": "weights/asr/tiny_whisper_model.pth",
+    "spk_weight": "weights/spk/spk_model.pth"
 }
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'

@@ -99,7 +99,7 @@ def train_spk_net(model, train_dataloader, accuracy, criterion, scheduler, optim
         loss.backward()
         optimizer.step()
 
-        if optimizer.param_groups[0]['lr'] >= configs.speech_recognition_cfg['min_lr']:
+        if optimizer.param_groups[0]['lr'] >= configs.speaker_recognition_cfg['min_lr']:
             scheduler.step()
 
         with torch.no_grad():
@@ -139,3 +139,58 @@ def valid_spk_net(model, valid_dataloader, accuracy, criterion):
         'loss': epoch_loss / len(valid_dataloader),
         'accuracy': epoch_acc / len(valid_dataloader)
     }
+
+def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, spk_model, asr_model, log_file):
+    model.train() 
+
+    epoch_loss, epoch_wer, epoch_ser, epoch_spk_acc = 0.0, 0.0, 0.0, 0.0
+    for i, (melspectrogram_features, tokens, labels, speaker_labels) in enumerate(tqdm(train_dataloader)):
+        melspectrogram_features, tokens, labels, speaker_labels = \
+            melspectrogram_features.to(configs.device), \
+            tokens.to(configs.device), \
+            labels.to(configs.device), \
+            speaker_labels.to(configs.device)
+
+        optimizer.zero_grad()
+        gen_melspec = model(melspectrogram_features)
+
+        loss_spk, spk_output = spk_model.loss(gen_melspec, speaker_labels)
+        loss_asr, asr_output = asr_model.loss(gen_melspec, tokens, labels)
+
+        # we want to minimize the loss of the speech recognition model 
+        # while maximizing the loss of the speaker recognition model
+        loss = loss_asr / loss_spk
+        
+        loss.backward()
+        optimizer.step()
+
+        if optimizer.param_groups[0]['lr'] >= configs.mel_generator_cfg['min_lr']:
+            scheduler.step()
+
+        with torch.no_grad():
+            wer, ser = compute_error_rate(asr_output, labels)
+            acc = accuracy(spk_output, speaker_labels)
+
+            epoch_loss += loss.item()
+            epoch_wer += wer
+            epoch_ser += ser
+            epoch_spk_acc += acc
+
+
+        torch.cuda.empty_cache()
+        if i % 100 == 0:
+            log(f"Loss: {epoch_loss / (i+1)} " + \
+                f"| WER: {epoch_wer / (i+1)} " + \
+                f"| SER: {epoch_ser / (i+1)} " + \
+                f"| Speaker Accuracy: {epoch_spk_acc / (i+1)} " + \
+                f"| LR: {optimizer.param_groups[0]['lr']}", log_file)
+
+    return {
+        'loss': epoch_loss / len(train_dataloader),
+        'wer': epoch_wer / len(train_dataloader),
+        'ser': epoch_ser / len(train_dataloader),
+        'speaker_accuracy': epoch_spk_acc / len(train_dataloader)
+    }
+
+def valid_gen_net():
+    pass 

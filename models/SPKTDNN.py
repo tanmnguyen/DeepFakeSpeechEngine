@@ -24,3 +24,7 @@ class SPKTDNN(nn.Module):
         x = self.fc(x)
 
         return x
+    
+    def loss(self, mel, target):
+        output = self.forward(mel)
+        return nn.CrossEntropyLoss()(output, target), output

@@ -98,11 +98,10 @@ def main(args):
     criterion = torch.nn.CrossEntropyLoss()
     accuracy = Accuracy(task="multiclass", num_classes=dataset.num_classes).to(configs.device)
 
-    # train_spk_net(model, train_dataloader, accuracy, criterion, scheduler, optimizer, log_file)
     for epoch in range(configs.speaker_recognition_cfg['epochs']):
         train_history = train_spk_net(model, train_dataloader, accuracy, criterion, scheduler, optimizer, log_file)
         log(
-            f"[Train] Epoch: {epoch+1}/{configs.speech_recognition_cfg['epochs']} - " + 
+            f"[Train] Epoch: {epoch+1}/{configs.speaker_recognition_cfg['epochs']} - " + 
             f"Loss: {train_history['loss']} | " + 
             f"Accuracy: {train_history['accuracy']}",
             log_file
@@ -110,7 +109,7 @@ def main(args):
 
         valid_history = valid_spk_net(model, valid_dataloader, accuracy, criterion)
         log(
-            f"[Valid] Epoch: {epoch+1}/{configs.speech_recognition_cfg['epochs']} - " + 
+            f"[Valid] Epoch: {epoch+1}/{configs.speaker_recognition_cfg['epochs']} - " + 
             f"Loss: {valid_history['loss']} | " + 
             f"Accuracy: {valid_history['accuracy']}",
             log_file

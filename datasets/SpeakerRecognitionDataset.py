@@ -3,13 +3,12 @@ from torch.utils.data import Dataset
 
 # This dataset contains the melspectrogram feature, uterrance id and binary class label
 class SpeakerRecognitionDataset(Dataset):
-    def __init__(self, data_path: str, train_option):
+    def __init__(self, data_path: str, train_option: dict):
         self.data = dict() 
         self.utt2spkid = dict()
 
-        self.spk2idx = dict()
-        for i, spk in enumerate(train_option[1:]):
-            self.spk2idx[spk] = i
+        if train_option["option"] == "spk2spk":
+            self.spk2idx = train_option["spk2idx"]
 
         # read speaker id 
         with open(os.path.join(data_path, "utt2spk"), 'r') as f:
@@ -18,7 +17,7 @@ class SpeakerRecognitionDataset(Dataset):
                 speaker_id = speaker_id.split("-")[0].split("_")[0]
 
                 # speaker to speaker train option
-                if train_option[0] == "spk2spk" and speaker_id in self.spk2idx:
+                if train_option['option'] == "spk2spk" and speaker_id in self.spk2idx:
                         self.utt2spkid[utterance_id] = self.spk2idx[speaker_id]
 
         # read mel-spectrogram features from hdf5 file 
@@ -33,8 +32,7 @@ class SpeakerRecognitionDataset(Dataset):
                         "speaker_id": self.utt2spkid[utterance_id],
                     }
 
-        # convert data dict to list 
-        self.data = list(self.data.values())
+        self.idx_to_utteranceid = {i: utterance_id for i, utterance_id in enumerate(self.data.keys())}
 
         # determine num class 
         self.num_classes = len(self.spk2idx)
@@ -43,4 +41,5 @@ class SpeakerRecognitionDataset(Dataset):
         return len(self.data)
     
     def __getitem__(self, idx):
-        return self.data[idx]
+        utterance_id = self.idx_to_utteranceid[idx]
+        return self.data[utterance_id]
