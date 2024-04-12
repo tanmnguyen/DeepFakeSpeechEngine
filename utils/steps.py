@@ -8,6 +8,7 @@ import configs
 from tqdm import tqdm
 from utils.io import log
 from utils.metrics import compute_error_rate
+from utils.batch import process_mel_spectrogram
 
 tokenizer = configs.speech_recognition_cfg['tokenizer']
 
@@ -145,6 +146,8 @@ def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, spk_m
 
     epoch_loss, epoch_wer, epoch_ser, epoch_spk_acc = 0.0, 0.0, 0.0, 0.0
     for i, (melspectrogram_features, tokens, labels, speaker_labels) in enumerate(tqdm(train_dataloader)):
+
+        # melspec = process_mel_spectrogram(melspectrogram_features)
         melspectrogram_features, tokens, labels, speaker_labels = \
             melspectrogram_features.to(configs.device), \
             tokens.to(configs.device), \

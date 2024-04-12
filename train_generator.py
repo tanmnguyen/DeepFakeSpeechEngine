@@ -50,6 +50,7 @@ def main(args):
     gen_model = MelGenerator(input_channels=80).to(configs.device)
     asr_model = load_asr(configs.mel_generator_cfg['asr_weight'])
     # spk_model = load_spk(configs.mel_generator_cfg['spk_weight'], num_classes=dataset.num_classes)
+    spk_model = None 
 
     # freeze the asr and spk model
     asr_model.eval()
@@ -57,7 +58,6 @@ def main(args):
     # spk_model.eval()
     # spk_model.requires_grad_(False)
 
-    return
 
     log(gen_model, log_file)
     log(f"Device: {configs.device}", log_file)
