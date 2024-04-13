@@ -11,11 +11,10 @@ class MelGenerator(nn.Module):
         # )
         self.encoder = nn.Linear(input_channels, input_channels)
 
-        # init weights to 1 and bias to 0 
-        nn.init.ones_(self.encoder.weight)
-        nn.init.zeros_(self.encoder.bias)
-        
-        
+        # init weight so that the encoder output is the same as the input
+        nn.init.eye_(self.encoder.weight)
+        self.encoder.bias.data.zero_()
+
     def forward(self, x):
         # x shape: (batch_size, input_channels, seq_len)
 
@@ -24,3 +23,12 @@ class MelGenerator(nn.Module):
         x = rearrange(x, 'b t c -> b c t') # rearrange to (batch_size, input_channels, seq_len)
 
         return x
+    
+# import torch 
+# model = MelGenerator(input_channels=80)
+
+# melspec = torch.rand(2, 80, 3000)
+# output = model(melspec)
+
+# # compare the melspec and output values they should all be equals 
+# print(melspec[0, 0, 0], output[0, 0, 0])
