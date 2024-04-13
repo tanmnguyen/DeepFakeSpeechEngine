@@ -57,7 +57,6 @@ class Generator(nn.Module):
         x = self.fc3(x)
 
         x = rearrange(x, 'b t c -> b c t') # rearrange to (batch_size, input_channels, seq_len)
-        print()
         return x
 
 
@@ -70,11 +69,13 @@ class MelGenerator(nn.Module):
 
         self.asr_model.eval()
         self.spk_model.eval()
-        
+
 
     def forward(self, x):
         # generate the output
         output = self.generator(x)
+
+        return output 
 
     def loss(self, x, tokens, labels, speaker_labels):
         gen_melspec = self.generator(x)

@@ -142,8 +142,10 @@ def valid_spk_net(model, valid_dataloader, accuracy, criterion):
     }
 
 def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, spk_model, asr_model, log_file, stage="deepfake"):
-    model.train() 
-    
+    model.generator.train() 
+    model.asr_model.eval()
+    model.spk_model.eval()
+
     epoch_loss, epoch_wer, epoch_ser, epoch_spk_acc = 0.0, 0.0, 0.0, 0.0
     for i, (melspectrogram_features, tokens, labels, speaker_labels) in enumerate(tqdm(train_dataloader)):
 
@@ -184,6 +186,11 @@ def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, spk_m
         #     asr_output = asr_model(gen_melspec, tokens)
 
         loss.backward()
+
+        for name, param in model.generator.named_parameters():
+            if param.requires_grad:
+                print(name, param.grad)
+
         optimizer.step()
 
         if optimizer.param_groups[0]['lr'] >= configs.mel_generator_cfg['min_lr']:
