@@ -35,4 +35,4 @@ class SPKTDNN(nn.Module):
 
     def neg_cross_entropy_loss(self, mel, target):
         output = self.forward(mel)
-        return neg_cross_entropy_loss(output, target)
+        return neg_cross_entropy_loss(output, target), output
