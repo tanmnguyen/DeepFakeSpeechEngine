@@ -69,7 +69,7 @@ def main(args):
 
     scheduler = torch.optim.lr_scheduler.StepLR(
         optimizer, 
-        step_size=len(train_dataloader) * 5, 
+        step_size=len(train_dataloader) * 2, 
         gamma=configs.mel_generator_cfg['scheduler_gamma']
     )
 
