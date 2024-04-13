@@ -84,14 +84,14 @@ def main(args):
     log(f"Valid set size: {len(valid_dataset)}", log_file)
     log(f"Number of parameters: {sum(p.numel() for p in model.parameters())}", log_file)
 
-    optimizer = optim.AdamW(model.parameters(), 
+    optimizer = optim.Adam(model.parameters(), 
         lr=configs.speaker_recognition_cfg['learning_rate'], 
         eps=1e-8
     )
 
     scheduler = torch.optim.lr_scheduler.StepLR(
         optimizer, 
-        step_size=len(train_dataloader) * 5, 
+        step_size=len(train_dataloader) * 3, 
         gamma=configs.speaker_recognition_cfg['scheduler_gamma']
     )
 

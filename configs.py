@@ -42,7 +42,7 @@ def get_json(json_path, num_keys, shuffle=False):
 speaker_recognition_cfg = {
     'batch_size': 16,
     'epochs': 30,
-    'learning_rate': 1e-4,
+    'learning_rate': 1e-3,
     'min_lr': 1e-7,
     'scheduler_gamma': 0.9,
     "result_dir": "results/spk",
@@ -59,7 +59,7 @@ mel_generator_cfg = {
     'epochs': 30,
     'learning_rate': 1e-2,
     'min_lr': 1e-7,
-    'scheduler_gamma': 0.9,
+    'scheduler_gamma': 0.7,
     "result_dir": "results/gen",
     # "asr_weight": "weights/asr/asr_model.pt",
     "asr_weight": "weights/asr/tiny_whisper_model.pth",
