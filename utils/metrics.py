@@ -1,7 +1,9 @@
 import sys 
 sys.path.append('../')
 
+import torch
 import configs 
+import torch.nn.functional as F
 
 def compute_error_rate(output, labels):
     # get tokenizer
@@ -31,13 +33,6 @@ def compute_error_rate(output, labels):
         wer += cnt_incorrects
         ser += 1 if cnt_incorrects > 0 else 0
 
-        # debug 
-        # if cnt_incorrects > 0:
-        #     pred_sent = normalizer(tokenizer.decode(output[i]))
-        #     true_sent = normalizer(tokenizer.decode(labels[i]))
-        #     print(f"True: {true_sent}")
-        #     print(f"Pred: {pred_sent}")
-
     # normalize WER and SER
     wer /= tot_words
     ser /= output.shape[0]
@@ -46,28 +41,19 @@ def compute_error_rate(output, labels):
 
 
 
-# print(features.shape, tokens.shape, labels.shape)
-# print(labels[0])
-# tmp = labels[0] 
-# tmp[tmp == -100] = tokenizer.eot
-# print(tmp)
-# print("labels", tokenizer.decode(tmp))
+def neg_cross_entropy_loss(output, labels):
+    output = F.softmax(output, dim=-1)
+    epsilon = 1e-15  # Small value to avoid log(0)
+    output = torch.clamp(output, epsilon, 1 - epsilon)  # Clip probabilities to avoid log(0) or log(1)
+    neg_log_likelihood = -torch.log(1 - output[torch.arange(output.size(0)), labels])
+    return neg_log_likelihood.mean()
 
-# results = model.decode(features[0].unsqueeze(0))
-# print(results)
 
-# exit(0)
-# results = model(features, tokens)
-# results = torch.argmax(results, dim=-1)
+# output = torch.tensor([[0.1, 0.1, 0.8]])
+# labels = torch.tensor([2])
 
-# for res in results:
-#     res[res == -100] = tokenizer.eot
-#     print(res)
-#     text = tokenizer.decode(res)
-#     print(text)
-#     break
-# results = results.argmax(-1)
-# print("results", results.shape)
-# tmp = results[0]
-# tmp[tmp == -100] = tokenizer.eot
-# print("output", tokenizer.decode(tmp))
+# print(output)
+# print(labels)
+
+# loss = neg_cross_entropy_loss(output, labels)
+# print(loss)

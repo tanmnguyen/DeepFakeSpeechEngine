@@ -1,6 +1,10 @@
+import sys 
+sys.path.append('../')
+
 import torch.nn as nn
 
 from einops import rearrange
+from utils.metrics import neg_cross_entropy_loss
 from .ECAPA_TDNN.ecapa_tdnn import ECAPA_TDNN_GLOB_c512 
 
 class SPKTDNN(nn.Module):
@@ -28,3 +32,7 @@ class SPKTDNN(nn.Module):
     def loss(self, mel, target):
         output = self.forward(mel)
         return nn.CrossEntropyLoss()(output, target), output
+
+    def neg_cross_entropy_loss(self, mel, target):
+        output = self.forward(mel)
+        return neg_cross_entropy_loss(output, target)

@@ -166,12 +166,12 @@ def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, spk_m
         if stage == "deepfake":
             gen_melspec = process_mel_spectrogram(gen_melspec)
 
-            loss_spk, spk_output = spk_model.loss(gen_melspec, speaker_labels)
+            loss_spk, spk_output = spk_model.neg_cross_entropy_loss(gen_melspec, speaker_labels)
             loss_asr, asr_output = asr_model.loss(gen_melspec, tokens, labels)
 
             # we want to minimize the loss of the speech recognition model 
             # while maximizing the loss of the speaker recognition model
-            loss = loss_asr / loss_spk
+            loss = loss_asr + loss_spk
 
         elif stage == "mimic":
             # here the criterion should be mse 
