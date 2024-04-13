@@ -57,7 +57,7 @@ speaker_recognition_cfg = {
 mel_generator_cfg = {
     'batch_size': 16,
     'epochs': 30,
-    'learning_rate': 1e-2,
+    'learning_rate': 1e-4,
     'min_lr': 1e-7,
     'scheduler_gamma': 0.7,
     "result_dir": "results/gen",
