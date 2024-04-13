@@ -62,7 +62,7 @@ def main(args):
     log(f"Valid set size: {len(valid_dataset)}", log_file)
     log(f"Number of parameters: {sum(p.numel() for p in gen_model.parameters())}", log_file)
 
-    optimizer = optim.AdamW(gen_model.parameters(), 
+    optimizer = optim.Adam(gen_model.parameters(), 
         lr=configs.mel_generator_cfg['learning_rate'], 
         eps=1e-8
     )
