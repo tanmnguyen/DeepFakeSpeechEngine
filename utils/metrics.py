@@ -43,7 +43,7 @@ def compute_error_rate(output, labels):
 
 def neg_cross_entropy_loss(output, labels):
     output = F.softmax(output, dim=-1)
-    epsilon = 1e-15  # Small value to avoid log(0)
+    epsilon = 1e-7  # Small value to avoid log(0)
     output = torch.clamp(output, epsilon, 1 - epsilon)  # Clip probabilities to avoid log(0) or log(1)
     neg_log_likelihood = -torch.log(1 - output[torch.arange(output.size(0)), labels])
     return neg_log_likelihood.mean()
