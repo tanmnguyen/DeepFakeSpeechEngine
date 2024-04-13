@@ -143,6 +143,8 @@ def valid_spk_net(model, valid_dataloader, accuracy, criterion):
 
 def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, spk_model, asr_model, log_file, stage="mimic"):
     model.train() 
+    spk_model.eval() 
+    asr_model.eval()
 
     epoch_loss, epoch_wer, epoch_ser, epoch_spk_acc = 0.0, 0.0, 0.0, 0.0
     for i, (melspectrogram_features, tokens, labels, speaker_labels) in enumerate(tqdm(train_dataloader)):
