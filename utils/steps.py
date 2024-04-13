@@ -141,7 +141,7 @@ def valid_spk_net(model, valid_dataloader, accuracy, criterion):
         'accuracy': epoch_acc / len(valid_dataloader)
     }
 
-def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, spk_model, asr_model, log_file, stage="mimic"):
+def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, spk_model, asr_model, log_file, stage="deepfake"):
     model.train() 
     spk_model.eval() 
     asr_model.eval()

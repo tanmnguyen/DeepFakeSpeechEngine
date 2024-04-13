@@ -40,12 +40,12 @@ class MelGenerator(nn.Module):
 
         return x
     
-import torch 
-model = MelGenerator(input_channels=80)
-print(model)
-melspec = torch.rand(2, 80, 3000)
-output = model(melspec)
-print(output.shape)
+# import torch 
+# model = MelGenerator(input_channels=80)
+# print(model)
+# melspec = torch.rand(2, 80, 3000)
+# output = model(melspec)
+# print(output.shape)
 
-# compare the melspec and output values they should all be equals 
-print(melspec[0, 0, 0], output[0, 0, 0])
+# # compare the melspec and output values they should all be equals 
+# print(melspec[0, 0, 0], output[0, 0, 0])
