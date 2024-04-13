@@ -143,9 +143,7 @@ def valid_spk_net(model, valid_dataloader, accuracy, criterion):
 
 def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, spk_model, asr_model, log_file, stage="deepfake"):
     model.train() 
-    spk_model.eval() 
-    asr_model.eval()
-
+    
     epoch_loss, epoch_wer, epoch_ser, epoch_spk_acc = 0.0, 0.0, 0.0, 0.0
     for i, (melspectrogram_features, tokens, labels, speaker_labels) in enumerate(tqdm(train_dataloader)):
 
@@ -158,31 +156,32 @@ def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, spk_m
             speaker_labels.to(configs.device)
 
         optimizer.zero_grad()
-        spk_model.zero_grad()
-        asr_model.zero_grad()
+        model.zero_grad() 
 
-        gen_melspec = model(melspectrogram_features)
+        loss, spk_output, asr_output = model.loss(melspectrogram_features, tokens, labels, speaker_labels)
 
-        if stage == "deepfake":
-            gen_melspec = process_mel_spectrogram(gen_melspec)
+        # gen_melspec = model(melspectrogram_features)
 
-            loss_spk, spk_output = spk_model.neg_cross_entropy_loss(gen_melspec, speaker_labels)
-            loss_asr, asr_output = asr_model.loss(gen_melspec, tokens, labels)
+        # if stage == "deepfake":
+        #     gen_melspec = process_mel_spectrogram(gen_melspec)
 
-            # we want to minimize the loss of the speech recognition model 
-            # while maximizing the loss of the speaker recognition model
-            loss = loss_asr + loss_spk
+        #     loss_spk, spk_output = spk_model.neg_cross_entropy_loss(gen_melspec, speaker_labels)
+        #     loss_asr, asr_output = asr_model.loss(gen_melspec, tokens, labels)
 
-        elif stage == "mimic":
-            # here the criterion should be mse 
-            loss = torch.nn.MSELoss()(
-                gen_melspec.contiguous().view(tokens.shape[0], -1), 
-                melspectrogram_features.contiguous().view(tokens.shape[0], -1)
-            )
+        #     # we want to minimize the loss of the speech recognition model 
+        #     # while maximizing the loss of the speaker recognition model
+        #     loss = loss_asr + loss_spk
 
-            gen_melspec = process_mel_spectrogram(gen_melspec)
-            spk_output = spk_model(gen_melspec)
-            asr_output = asr_model(gen_melspec, tokens)
+        # elif stage == "mimic":
+        #     # here the criterion should be mse 
+        #     loss = torch.nn.MSELoss()(
+        #         gen_melspec.contiguous().view(tokens.shape[0], -1), 
+        #         melspectrogram_features.contiguous().view(tokens.shape[0], -1)
+        #     )
+
+        #     gen_melspec = process_mel_spectrogram(gen_melspec)
+        #     spk_output = spk_model(gen_melspec)
+        #     asr_output = asr_model(gen_melspec, tokens)
 
         loss.backward()
         optimizer.step()

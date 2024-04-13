@@ -1,10 +1,17 @@
+import sys 
+sys.path.append("../")
+
 import torch 
 import torch.nn as nn 
 from einops import rearrange
+from utils.batch import process_mel_spectrogram
 
-class MelGenerator(nn.Module):
+
+class Generator(nn.Module):
     def __init__(self, input_channels: int):
-        super(MelGenerator, self).__init__()
+        super(Generator, self).__init__()
+
+        self.input_channels = input_channels
 
         self.mhsa1 = nn.MultiheadAttention(embed_dim=input_channels, num_heads=1)
         self.fc1 = nn.Linear(input_channels, input_channels)
@@ -14,24 +21,24 @@ class MelGenerator(nn.Module):
         self.relu2 = nn.ReLU()
 
         self.fc3 = nn.Linear(input_channels, input_channels)
-        self.relu3 = nn.ReLU()
 
+        self.init_weight()
 
+    def init_weight(self):
         # init weight such that this network is an identity function
         # init weight of mhsa1 and mhsa2 to 0
         self.mhsa1.in_proj_weight.data.zero_()
         self.mhsa1.in_proj_bias.data.zero_()
        
         # make weight of fc to identity matrix using eye 
-        self.fc1.weight.data = torch.eye(input_channels)
+        self.fc1.weight.data = torch.eye(self.input_channels)
         self.fc1.bias.data.zero_()
 
-        self.fc2.weight.data = torch.eye(input_channels)
+        self.fc2.weight.data = torch.eye(self.input_channels)
         self.fc2.bias.data.zero_()
 
-        self.fc3.weight.data = torch.eye(input_channels)
+        self.fc3.weight.data = torch.eye(self.input_channels)
         self.fc3.bias.data.zero_()
-
 
     def forward(self, x):
         # x shape: (batch_size, input_channels, seq_len)
@@ -50,8 +57,34 @@ class MelGenerator(nn.Module):
         x = self.fc3(x)
 
         x = rearrange(x, 'b t c -> b c t') # rearrange to (batch_size, input_channels, seq_len)
-
+        print()
         return x
+
+
+class MelGenerator(nn.Module):
+    def __init__(self, input_channels: int, asr_model: nn.Module, spk_model: nn.Module):
+        super(MelGenerator, self).__init__()
+        self.generator = Generator(input_channels)
+        self.asr_model = asr_model 
+        self.spk_model = spk_model
+
+        self.asr_model.eval()
+        self.spk_model.eval()
+        
+
+    def forward(self, x):
+        # generate the output
+        output = self.generator(x)
+
+    def loss(self, x, tokens, labels, speaker_labels):
+        gen_melspec = self.generator(x)
+        gen_melspec = process_mel_spectrogram(gen_melspec)
+
+        loss_spk, spk_output = self.spk_model.neg_cross_entropy_loss(gen_melspec, speaker_labels)
+        loss_asr, asr_output = self.asr_model.loss(gen_melspec, tokens, labels)
+
+        return loss_asr + loss_spk, spk_output, asr_output
+
     
 # import torch 
 # model = MelGenerator(input_channels=80)

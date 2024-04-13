@@ -46,23 +46,19 @@ def main(args):
         collate_fn=spectrogram_generation_collate_fn, 
         shuffle=False
     )
-    
-    gen_model = MelGenerator(input_channels=80).to(configs.device)
+
     asr_model = load_asr(configs.mel_generator_cfg['asr_weight'])
     spk_model = load_spk(configs.mel_generator_cfg['spk_weight'], num_classes=dataset.num_classes)
-
-    # freeze the asr and spk model
-    # asr_model.requires_grad_(False)
-    # spk_model.requires_grad_(False)
-
-
+    
+    gen_model = MelGenerator(input_channels=80, asr_model=asr_model, spk_model=spk_model).to(configs.device)
+    
     log(gen_model, log_file)
     log(f"Device: {configs.device}", log_file)
     log(f"Train set size: {len(train_dataset)}", log_file)
     log(f"Valid set size: {len(valid_dataset)}", log_file)
     log(f"Number of parameters: {sum(p.numel() for p in gen_model.parameters())}", log_file)
 
-    optimizer = optim.Adam(gen_model.parameters(), 
+    optimizer = optim.Adam(gen_model.generator.parameters(), 
         lr=configs.mel_generator_cfg['learning_rate'], 
         eps=1e-8
     )
