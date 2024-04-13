@@ -22,15 +22,18 @@ class ASRWhisper(nn.Module):
     def decode(self, mel):
         return self.whisper_model.decode(mel, configs.speech_recognition_cfg['decodeOption'])
 
-    def forward(self, mel, tokens):
+    def forward(self, mel, tokens, encoder_no_grad):
         # get features from the encoder
-        with torch.no_grad():
+        if encoder_no_grad:
+            with torch.no_grad():
+                features = self.whisper_model.encoder(mel)
+        else:
             features = self.whisper_model.encoder(mel)
 
         out = self.whisper_model.decoder(tokens, features)
         return out 
         # return self.whisper_model(mel, tokens)
     
-    def loss(self, mel, tokens, labels):
-        out = self(mel, tokens)
+    def loss(self, mel, tokens, labels, encoder_no_grad=True):
+        out = self(mel, tokens, encoder_no_grad)
         return self.loss_fn(out.view(-1, out.size(-1)), labels.contiguous().view(-1)), out

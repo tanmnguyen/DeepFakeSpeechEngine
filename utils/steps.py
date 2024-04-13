@@ -187,9 +187,9 @@ def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, spk_m
 
         loss.backward()
 
-        for name, param in model.generator.named_parameters():
-            if param.requires_grad:
-                print(name, param.grad)
+        # for name, param in model.generator.named_parameters():
+        #     if param.requires_grad:
+        #         print(name, param.grad)
 
         optimizer.step()
 
