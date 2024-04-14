@@ -91,7 +91,7 @@ class MelGenerator(nn.Module):
 
         loss_spk, spk_output = self.spk_model.neg_cross_entropy_loss(gen_melspec, speaker_labels)
         # loss_asr, asr_output = self.asr_model.loss_encoder(tru_melspec, gen_melspec, tokens)
-        loss_asr, asr_output = self.asr_model.loss(gen_melspec, tokens, labels)
+        loss_asr, asr_output = self.asr_model.loss(gen_melspec, tokens, labels, encoder_no_grad=False)
 
         return loss_asr, spk_output, asr_output
         # return loss_asr + loss_spk, spk_output, asr_output
