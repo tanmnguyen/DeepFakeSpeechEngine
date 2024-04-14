@@ -79,10 +79,11 @@ class MelGenerator(nn.Module):
 
     def loss(self, x, tokens, labels, speaker_labels):
         gen_melspec = self.generator(x)
+        tru_melspec = process_mel_spectrogram(x)
         gen_melspec = process_mel_spectrogram(gen_melspec)
 
         loss_spk, spk_output = self.spk_model.neg_cross_entropy_loss(gen_melspec, speaker_labels)
-        loss_asr, asr_output = self.asr_model.loss(gen_melspec, tokens, labels, encoder_no_grad=False)
+        loss_asr, asr_output = self.asr_model.loss_encoder(tru_melspec, gen_melspec, tokens)
 
         return loss_asr + loss_spk, spk_output, asr_output
 
