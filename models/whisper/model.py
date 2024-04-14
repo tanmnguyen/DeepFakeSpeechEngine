@@ -186,7 +186,7 @@ class AudioEncoder(nn.Module):
         assert y.shape[1:] == self.positional_embedding.shape, "incorrect audio shape"
         y = (y + self.positional_embedding).to(y.dtype)
 
-        loss = torch.tensor(0.0)
+        loss = torch.tensor(0.0).to(y.device)
         for block in self.blocks:
             x = block(x)
             y = block(y)
