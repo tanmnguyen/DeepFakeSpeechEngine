@@ -8,21 +8,27 @@ from utils.batch import process_mel_spectrogram
 
 
 class Generator(nn.Module):
-    def __init__(self, input_channels: int):
+    def __init__(self, input_channels: int, hidden_dim = 128):
         super(Generator, self).__init__()
 
         self.input_channels = input_channels
 
         self.mhsa1 = nn.MultiheadAttention(embed_dim=input_channels, num_heads=1)
-        self.fc1 = nn.Linear(input_channels, input_channels)
+        self.fc1 = nn.Linear(input_channels, hidden_dim)
         self.relu1 = nn.ReLU()
 
-        self.fc2 = nn.Linear(input_channels, input_channels)
+        self.fc2 = nn.Linear(hidden_dim, hidden_dim)
         self.relu2 = nn.ReLU()
 
-        self.fc3 = nn.Linear(input_channels, input_channels)
+        self.fc3 = nn.Linear(hidden_dim, input_channels)
 
         # self.init_weight()
+        self.xavier_init()
+
+    def xavier_init(self):
+        nn.init.xavier_normal_(self.fc1.weight)
+        nn.init.xavier_normal_(self.fc2.weight)
+        nn.init.xavier_normal_(self.fc3.weight)
 
     def init_weight(self):
         # init weight such that this network is an identity function
@@ -48,11 +54,11 @@ class Generator(nn.Module):
         # x_mhsa, _ = self.mhsa1(x, x, x)
         # x = x + x_mhsa
 
-        # x = self.fc1(x)
-        # x = self.relu1(x)
+        x = self.fc1(x)
+        x = self.relu1(x)
 
-        # x = self.fc2(x)
-        # x = self.relu2(x)
+        x = self.fc2(x)
+        x = self.relu2(x)
 
         x = self.fc3(x)
 
@@ -79,13 +85,16 @@ class MelGenerator(nn.Module):
 
     def loss(self, x, tokens, labels, speaker_labels):
         gen_melspec = self.generator(x)
-        tru_melspec = process_mel_spectrogram(x)
+        
+        # tru_melspec = process_mel_spectrogram(x)
         gen_melspec = process_mel_spectrogram(gen_melspec)
 
         loss_spk, spk_output = self.spk_model.neg_cross_entropy_loss(gen_melspec, speaker_labels)
-        loss_asr, asr_output = self.asr_model.loss_encoder(tru_melspec, gen_melspec, tokens)
+        # loss_asr, asr_output = self.asr_model.loss_encoder(tru_melspec, gen_melspec, tokens)
+        loss_asr, asr_output = self.asr_model.loss(gen_melspec, tokens, labels)
 
-        return loss_asr + loss_spk, spk_output, asr_output
+        return loss_asr, spk_output, asr_output
+        # return loss_asr + loss_spk, spk_output, asr_output
 
     
 # import torch 

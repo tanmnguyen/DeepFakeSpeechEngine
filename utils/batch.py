@@ -13,7 +13,7 @@ def process_mel_spectrogram(mel_spec):
     mel_spec_batch = torch.clamp(mel_spec, min=1e-10)
     
     # Take the logarithm (base 10) of the spectrogram
-    log_spec_batch = mel_spec_batch.log10()
+    log_spec_batch = torch.log10(mel_spec_batch)
     
     # Adjust the minimum value to avoid overly large values after log transformation
     log_spec_min = log_spec_batch.view(-1, 80, 3000).max(dim=2, keepdim=True)[0]

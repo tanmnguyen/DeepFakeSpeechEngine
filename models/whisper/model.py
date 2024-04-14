@@ -193,8 +193,9 @@ class AudioEncoder(nn.Module):
 
             # compute loss between the two features
             loss += nn.functional.mse_loss(
-                x.contiguous().view(tru_mel.shape[0], -1),
-                y.contiguous().view(tru_mel.shape[0], -1)
+                y.contiguous().view(tru_mel.shape[0], -1),
+                x.contiguous().view(tru_mel.shape[0], -1)
+
             )
         
         x = self.ln_post(x)

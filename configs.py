@@ -56,9 +56,9 @@ speaker_recognition_cfg = {
 
 mel_generator_cfg = {
     'batch_size': 8,
-    'epochs': 30,
+    'epochs': 50,
     'learning_rate': 1e-2,
-    'min_lr': 1e-7,
+    'min_lr': 7e-6,
     'scheduler_gamma': 0.7,
     "result_dir": "results/gen",
     # "asr_weight": "weights/asr/asr_model.pt",
