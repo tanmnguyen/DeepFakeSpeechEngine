@@ -207,7 +207,7 @@ def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, spk_m
 
 
         torch.cuda.empty_cache()
-        if i % 100 == 0:
+        if i % 50 == 0:
             log(f"Loss: {epoch_loss / (i+1)} " + \
                 f"| WER: {epoch_wer / (i+1)} " + \
                 f"| SER: {epoch_ser / (i+1)} " + \

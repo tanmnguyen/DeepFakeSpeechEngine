@@ -22,7 +22,7 @@ class Generator(nn.Module):
 
         self.fc3 = nn.Linear(input_channels, input_channels)
 
-        self.init_weight()
+        # self.init_weight()
 
     def init_weight(self):
         # init weight such that this network is an identity function
@@ -45,14 +45,14 @@ class Generator(nn.Module):
 
         x = rearrange(x, 'b c t -> b t c') # rearrange to (batch_size, seq_len, input_channels)
 
-        x_mhsa, _ = self.mhsa1(x, x, x)
-        x = x + x_mhsa
+        # x_mhsa, _ = self.mhsa1(x, x, x)
+        # x = x + x_mhsa
 
-        x = self.fc1(x)
-        x = self.relu1(x)
+        # x = self.fc1(x)
+        # x = self.relu1(x)
 
-        x = self.fc2(x)
-        x = self.relu2(x)
+        # x = self.fc2(x)
+        # x = self.relu2(x)
 
         x = self.fc3(x)
 

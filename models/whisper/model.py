@@ -171,8 +171,36 @@ class AudioEncoder(nn.Module):
 
         x = self.ln_post(x)
         return x
+    
+    def get_encoder_loss(self, tru_mel, gen_mel):
+        x = F.gelu(self.conv1(tru_mel))
+        x = F.gelu(self.conv2(x))
+        x = x.permute(0, 2, 1)
 
+        assert x.shape[1:] == self.positional_embedding.shape, "incorrect audio shape"
+        x = (x + self.positional_embedding).to(x.dtype)
 
+        y = F.gelu(self.conv1(gen_mel))
+        y = F.gelu(self.conv2(y))
+        y = y.permute(0, 2, 1)
+        assert y.shape[1:] == self.positional_embedding.shape, "incorrect audio shape"
+        y = (y + self.positional_embedding).to(y.dtype)
+
+        loss = torch.tensor(0.0)
+        for block in self.blocks:
+            x = block(x)
+            y = block(y)
+
+            # compute loss between the two features
+            loss += nn.functional.mse_loss(
+                x.contiguous().view(tru_mel.shape[0], -1),
+                y.contiguous().view(tru_mel.shape[0], -1)
+            )
+        
+        x = self.ln_post(x)
+        y = self.ln_post(y)
+        return loss, x, y
+    
 class TextDecoder(nn.Module):
     def __init__(
         self, n_vocab: int, n_ctx: int, n_state: int, n_head: int, n_layer: int
@@ -262,6 +290,9 @@ class Whisper(nn.Module):
         self, mel: torch.Tensor, tokens: torch.Tensor
     ) -> Dict[str, torch.Tensor]:
         return self.decoder(tokens, self.encoder(mel))
+    
+    def get_encoder_loss(self, tru_mel, gen_mel):
+        return self.encoder.get_encoder_loss(tru_mel, gen_mel)
 
     @property
     def device(self):

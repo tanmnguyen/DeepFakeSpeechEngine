@@ -39,15 +39,18 @@ class ASRWhisper(nn.Module):
         return self.loss_fn(out.view(-1, out.size(-1)), labels.contiguous().view(-1)), out
     
     def loss_encoder(self, tru_mel, gen_mel, tokens):
-        # get features from the encoder
-        ori_features = self.whisper_model.encoder(tru_mel)
-        gen_features = self.whisper_model.encoder(gen_mel)
+        loss, ori_features, gen_features= self.whisper_model.get_encoder_loss(tru_mel, gen_mel)
 
-        # compute output 
+        # get features from the encoder
+        # ori_features = self.whisper_model.encoder(tru_mel)
+        # ori_features, gen_features = self.whisper_model.encoder(gen_mel)
+
+        # # compute output 
         with torch.no_grad():
             out = self.whisper_model.decoder(tokens, gen_features)
             
-        return nn.functional.mse_loss(
-            ori_features.contiguous().view(tru_mel.shape[0], -1),
-            gen_features.contiguous().view(tru_mel.shape[0], -1)
-        ), out
+        return loss, out 
+        # return nn.functional.mse_loss(
+        #     ori_features.contiguous().view(tru_mel.shape[0], -1),
+        #     gen_features.contiguous().view(tru_mel.shape[0], -1)
+        # ), out
