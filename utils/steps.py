@@ -141,16 +141,13 @@ def valid_spk_net(model, valid_dataloader, accuracy, criterion):
         'accuracy': epoch_acc / len(valid_dataloader)
     }
 
-def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, spk_model, asr_model, log_file, stage="deepfake"):
+def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, log_file):
     model.generator.train() 
     model.asr_model.eval()
     model.spk_model.eval()
 
     epoch_loss, epoch_wer, epoch_ser, epoch_spk_acc = 0.0, 0.0, 0.0, 0.0
     for i, (melspectrogram_features, tokens, labels, speaker_labels) in enumerate(tqdm(train_dataloader)):
-
-        # melspec = process_mel_spectrogram(melspectrogram_features)
- 
         melspectrogram_features, tokens, labels, speaker_labels = \
             melspectrogram_features.to(configs.device), \
             tokens.to(configs.device), \
@@ -160,37 +157,8 @@ def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, spk_m
         optimizer.zero_grad()
         model.zero_grad() 
 
-        loss, spk_output, asr_output = model.loss(melspectrogram_features, tokens, labels, speaker_labels)
-
-        # gen_melspec = model(melspectrogram_features)
-
-        # if stage == "deepfake":
-        #     gen_melspec = process_mel_spectrogram(gen_melspec)
-
-        #     loss_spk, spk_output = spk_model.neg_cross_entropy_loss(gen_melspec, speaker_labels)
-        #     loss_asr, asr_output = asr_model.loss(gen_melspec, tokens, labels)
-
-        #     # we want to minimize the loss of the speech recognition model 
-        #     # while maximizing the loss of the speaker recognition model
-        #     loss = loss_asr + loss_spk
-
-        # elif stage == "mimic":
-        #     # here the criterion should be mse 
-        #     loss = torch.nn.MSELoss()(
-        #         gen_melspec.contiguous().view(tokens.shape[0], -1), 
-        #         melspectrogram_features.contiguous().view(tokens.shape[0], -1)
-        #     )
-
-        #     gen_melspec = process_mel_spectrogram(gen_melspec)
-        #     spk_output = spk_model(gen_melspec)
-        #     asr_output = asr_model(gen_melspec, tokens)
-
+        loss, spk_output, asr_output, mel_mse = model.loss(melspectrogram_features, tokens, labels, speaker_labels)
         loss.backward()
-
-        # for name, param in model.generator.named_parameters():
-        #     if param.requires_grad:
-        #         print(name, param.grad)
-
         optimizer.step()
 
         if optimizer.param_groups[0]['lr'] >= configs.mel_generator_cfg['min_lr']:
@@ -200,11 +168,11 @@ def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, spk_m
             wer, ser = compute_error_rate(asr_output, labels)
             acc = accuracy(spk_output, speaker_labels)
 
+            epoch_mel_mse += mel_mse.item()
             epoch_loss += loss.item()
             epoch_wer += wer
             epoch_ser += ser
             epoch_spk_acc += acc
-
 
         torch.cuda.empty_cache()
         if i % 1 == 0:
@@ -212,12 +180,14 @@ def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, spk_m
                 f"| WER: {epoch_wer / (i+1)} " + \
                 f"| SER: {epoch_ser / (i+1)} " + \
                 f"| Speaker Accuracy: {epoch_spk_acc / (i+1)} " + \
+                f"| Mel MSE: {epoch_mel_mse / (i+1)}" + \
                 f"| LR: {optimizer.param_groups[0]['lr']}", log_file)
 
     return {
         'loss': epoch_loss / len(train_dataloader),
         'wer': epoch_wer / len(train_dataloader),
         'ser': epoch_ser / len(train_dataloader),
+        'mel_mse': epoch_mel_mse / len(train_dataloader), 
         'speaker_accuracy': epoch_spk_acc / len(train_dataloader)
     }
 

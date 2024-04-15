@@ -74,7 +74,7 @@ def main(args):
     accuracy = Accuracy(task="multiclass", num_classes=dataset.num_classes).to(configs.device)
 
     for epoch in range(configs.speaker_recognition_cfg['epochs']):
-        train_history = train_gen_net(gen_model, train_dataloader, scheduler, optimizer, accuracy, spk_model, asr_model, log_file)
+        train_history = train_gen_net(gen_model, train_dataloader, scheduler, optimizer, accuracy, log_file)
         log(
             f"[Train] Epoch: {epoch+1}/{configs.mel_generator_cfg['epochs']} - " +
             f"Loss: {train_history['loss']} | " +
