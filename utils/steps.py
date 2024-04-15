@@ -176,12 +176,12 @@ def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, log_f
 
         torch.cuda.empty_cache()
         if i % 1 == 0:
-            log(f"Loss: {epoch_loss / (i+1)} " + \
-                f"| WER: {epoch_wer / (i+1)} " + \
-                f"| SER: {epoch_ser / (i+1)} " + \
-                f"| Speaker Accuracy: {epoch_spk_acc / (i+1)} " + \
-                f"| Mel MSE: {epoch_mel_mse / (i+1)}" + \
-                f"| LR: {optimizer.param_groups[0]['lr']}", log_file)
+            log(f"Loss: {epoch_loss / (i+1):.4f} " + \
+                f"| WER: {epoch_wer / (i+1):.4f} " + \
+                f"| SER: {epoch_ser / (i+1):.4f} " + \
+                f"| Speaker Accuracy: {epoch_spk_acc / (i+1):.4f} " + \
+                f"| Mel MSE: {epoch_mel_mse / (i+1):.4f}" + \
+                f"| LR: {optimizer.param_groups[0]['lr']:.4f}", log_file)
 
     return {
         'loss': epoch_loss / len(train_dataloader),
