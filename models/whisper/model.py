@@ -187,16 +187,15 @@ class AudioEncoder(nn.Module):
         y = (y + self.positional_embedding).to(y.dtype)
 
         loss = torch.tensor(0.0).to(y.device)
-        for block in self.blocks:
+        for i, block in enumerate(self.blocks):
             x = block(x)
             y = block(y)
 
-            # compute loss between the two features
-            loss += nn.functional.mse_loss(
-                y.contiguous().view(tru_mel.shape[0], -1),
-                x.contiguous().view(tru_mel.shape[0], -1)
-
-            )
+            if i == 0: 
+                loss = nn.functional.mse_loss(
+                    y.contiguous().view(x.shape[0], -1),
+                    x.contiguous().view(x.shape[0], -1)
+                )
         
         x = self.ln_post(x)
         y = self.ln_post(y)

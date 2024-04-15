@@ -8,68 +8,53 @@ from utils.batch import process_mel_spectrogram
 
 
 class Generator(nn.Module):
-    def __init__(self, input_channels: int, hidden_dim = 128):
+    def __init__(self, asr_encoder: nn.Module, in_channels=80, em_channels=384):
         super(Generator, self).__init__()
 
-        self.input_channels = input_channels
+        self.fc = nn.Linear(in_channels, em_channels)
 
-        self.mhsa1 = nn.MultiheadAttention(embed_dim=input_channels, num_heads=1)
-        self.fc1 = nn.Linear(input_channels, hidden_dim)
-        self.relu1 = nn.ReLU()
+        self.melspec_encoder = nn.TransformerEncoder(
+            nn.TransformerEncoderLayer(d_model=em_channels, nhead=8), 
+            num_layers=2
+        )
 
-        self.fc2 = nn.Linear(hidden_dim, hidden_dim)
-        self.relu2 = nn.ReLU()
+        self.asr_encoder = asr_encoder 
 
-        self.fc3 = nn.Linear(hidden_dim, input_channels)
+        self.cross_attention = nn.MultiheadAttention(embed_dim=em_channels, num_heads=8)
 
-        # self.init_weight()
-        self.xavier_init()
+        self.fc_out = nn.Linear(em_channels, in_channels)
 
-    def xavier_init(self):
-        nn.init.xavier_normal_(self.fc1.weight)
-        nn.init.xavier_normal_(self.fc2.weight)
-        nn.init.xavier_normal_(self.fc3.weight)
-
-    def init_weight(self):
-        # init weight such that this network is an identity function
-        # init weight of mhsa1 and mhsa2 to 0
-        self.mhsa1.in_proj_weight.data.zero_()
-        self.mhsa1.in_proj_bias.data.zero_()
-       
-        # make weight of fc to identity matrix using eye 
-        self.fc1.weight.data = torch.eye(self.input_channels)
-        self.fc1.bias.data.zero_()
-
-        self.fc2.weight.data = torch.eye(self.input_channels)
-        self.fc2.bias.data.zero_()
-
-        self.fc3.weight.data = torch.eye(self.input_channels)
-        self.fc3.bias.data.zero_()
 
     def forward(self, x):
-        # x shape: (batch_size, input_channels, seq_len)
+        """ 
+        x shape: (batch_size, input_channels, seq_len) 
+        """
 
-        x = rearrange(x, 'b c t -> b t c') # rearrange to (batch_size, seq_len, input_channels)
+        mel_x = rearrange(x, 'b c t -> b t c') # rearrange to (batch_size, seq_len, input_channels)
+        mel_x = self.fc(mel_x)
+        asr_x = x 
 
-        # x_mhsa, _ = self.mhsa1(x, x, x)
-        # x = x + x_mhsa
+        melspec_latent = self.melspec_encoder(mel_x)    # (batch_size, seq_len0, in_channels)
+        asr_latent = self.asr_encoder(asr_x)            # (batch_size, seq_len1, in_channels)
 
-        x = self.fc1(x)
-        x = self.relu1(x)
+        # Cross-attention
+        # Query: melspec_latent, Key and Value: asr_latent
+        melspec_latent = melspec_latent.permute(1, 0, 2)  # (seq_len0, batch_size, in_channels)
+        asr_latent = asr_latent.permute(1, 0, 2)  # (seq_len1, batch_size, in_channels)
+        attended_output, _ = self.cross_attention(melspec_latent, asr_latent, asr_latent)
 
-        x = self.fc2(x)
-        x = self.relu2(x)
+        # Rearrange output and transpose back to original shape
+        attended_output = attended_output.permute(1, 0, 2)  # (batch_size, seq_len0, in_channels)
+        attended_output = self.fc_out(attended_output)
 
-        x = self.fc3(x)
-
-        x = rearrange(x, 'b t c -> b c t') # rearrange to (batch_size, input_channels, seq_len)
-        return x
+        attended_output = rearrange(attended_output, 'b t c -> b c t') # rearrange to (batch_size, input_channels, seq_len)
+        return attended_output
 
 
 class MelGenerator(nn.Module):
     def __init__(self, input_channels: int, asr_model: nn.Module, spk_model: nn.Module):
         super(MelGenerator, self).__init__()
-        self.generator = Generator(input_channels)
+        self.generator = Generator(asr_model.whisper_model.encoder)
         self.asr_model = asr_model 
         self.spk_model = spk_model
 
