@@ -146,7 +146,7 @@ def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, log_f
     model.asr_model.eval()
     model.spk_model.eval()
 
-    epoch_loss, epoch_wer, epoch_ser, epoch_spk_acc = 0.0, 0.0, 0.0, 0.0
+    epoch_loss, epoch_wer, epoch_ser, epoch_spk_acc, epoch_mel_mse = 0.0, 0.0, 0.0, 0.0, 0.0
     for i, (melspectrogram_features, tokens, labels, speaker_labels) in enumerate(tqdm(train_dataloader)):
         melspectrogram_features, tokens, labels, speaker_labels = \
             melspectrogram_features.to(configs.device), \
