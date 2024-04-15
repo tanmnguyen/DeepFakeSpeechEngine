@@ -154,12 +154,12 @@ def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, log_f
             labels.to(configs.device), \
             speaker_labels.to(configs.device)
 
-        optimizer.zero_grad()
-        model.zero_grad() 
+       
 
-        loss, spk_output, asr_output, mel_mse = model.loss(melspectrogram_features, tokens, labels, speaker_labels)
-        loss.backward()
-        optimizer.step()
+        loss, spk_output, asr_output, mel_mse = model.train_generator(
+            melspectrogram_features, tokens, labels, speaker_labels
+        )
+        
 
         if optimizer.param_groups[0]['lr'] >= configs.mel_generator_cfg['min_lr']:
             scheduler.step()

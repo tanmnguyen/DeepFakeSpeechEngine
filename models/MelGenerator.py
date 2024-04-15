@@ -41,7 +41,7 @@ class Generator(nn.Module):
 
 
 class MelGenerator(nn.Module):
-    def __init__(self, input_channels: int, asr_model: nn.Module, spk_model: nn.Module):
+    def __init__(self, asr_model: nn.Module, spk_model: nn.Module):
         super(MelGenerator, self).__init__()
         self.generator = Generator()
         self.asr_model = asr_model 
@@ -50,6 +50,8 @@ class MelGenerator(nn.Module):
         self.asr_model.eval()
         self.spk_model.eval()
 
+    def set_gen_optimizer(self, gen_optimizer):
+        self.gen_optimizer = gen_optimizer
 
     def forward(self, x):
         # generate the output
@@ -57,7 +59,10 @@ class MelGenerator(nn.Module):
 
         return output 
 
-    def loss(self, x, tokens, labels, speaker_labels):
+    def train_generator(self, x, tokens, labels, speaker_labels):
+        self.gen_optimizer.zero_grad()
+        self.zero_grad() 
+    
         gen_melspec = self.generator(x)
         processed_gen_melspec = process_mel_spectrogram(gen_melspec)
 
@@ -70,4 +75,9 @@ class MelGenerator(nn.Module):
                 x.contiguous().view(x.shape[0], -1)
             )
         
-        return loss_asr + loss_spk, spk_output, asr_output, mel_mse
+        loss = loss_asr + loss_spk
+        
+        loss.backward()
+        self.gen_optimizer.step()
+
+        return loss, spk_output, asr_output, mel_mse

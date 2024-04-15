@@ -50,7 +50,17 @@ def main(args):
     asr_model = load_asr(configs.mel_generator_cfg['asr_weight'])
     spk_model = load_spk(configs.mel_generator_cfg['spk_weight'], num_classes=dataset.num_classes)
     
-    gen_model = MelGenerator(input_channels=80, asr_model=asr_model, spk_model=spk_model).to(configs.device)
+    gen_model = MelGenerator(
+        asr_model=asr_model, 
+        spk_model=spk_model
+    ).to(configs.device)
+
+    optimizer = optim.Adam(gen_model.generator.parameters(), 
+        lr=configs.mel_generator_cfg['learning_rate'], 
+        eps=1e-8
+    )
+
+    gen_model.set_gen_optimizer(optimizer)
     
     log(gen_model, log_file)
     log(f"Device: {configs.device}", log_file)
@@ -58,12 +68,7 @@ def main(args):
     log(f"Valid set size: {len(valid_dataset)}", log_file)
     log(f"Number of parameters: {sum(p.numel() for p in gen_model.parameters())}", log_file)
 
-    # trainable params for generator except the asr model encoder
-    parameters_to_optimize = [param for name, param in gen_model.generator.named_parameters() if "asr_encoder" not in name]
-    optimizer = optim.Adam(parameters_to_optimize, 
-        lr=configs.mel_generator_cfg['learning_rate'], 
-        eps=1e-8
-    )
+    
 
     scheduler = torch.optim.lr_scheduler.StepLR(
         optimizer, 
