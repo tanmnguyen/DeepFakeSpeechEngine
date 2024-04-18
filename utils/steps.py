@@ -175,7 +175,7 @@ def train_gen_net(model, train_dataloader, accuracy, log_file, train_spk=True):
             epoch_loss_asr += loss_asr.item()
 
         torch.cuda.empty_cache()
-        if i % 100 == 0:
+        if i % 1 == 0:
             log(f"Loss: {epoch_loss / (i+1):.4f} " + \
                 f"| WER: {epoch_wer / (i+1):.4f} " + \
                 f"| SER: {epoch_ser / (i+1):.4f} " + \
