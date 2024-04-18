@@ -92,7 +92,7 @@ def main(args):
 
     for epoch in range(configs.mel_generator_cfg['epochs']):
         train_history = train_gen_net(gen_model, train_dataloader, accuracy, log_file)
-        log(g
+        log(
             f"[Train] Epoch: {epoch+1}/{configs.mel_generator_cfg['epochs']} - " +
             f"Loss: {train_history['loss']} | " +
             f"WER: {train_history['wer']} | " +
