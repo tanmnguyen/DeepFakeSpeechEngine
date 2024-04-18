@@ -101,7 +101,7 @@ class MelGenerator(nn.Module):
         gen_melspec = self.generator(x)
         processed_gen_melspec = process_mel_spectrogram(gen_melspec)
 
-        loss_spk, spk_output = self.spk_model.neg_cross_entropy_loss(processed_gen_melspec, speaker_labels)
+        loss_spk, spk_output = self.spk_model.loss(processed_gen_melspec, speaker_labels)
 
         loss_spk.backward()
         self.spk_optimizer.step()
