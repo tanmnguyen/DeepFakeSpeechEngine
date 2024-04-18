@@ -68,8 +68,6 @@ def main(args):
     log(f"Valid set size: {len(valid_dataset)}", log_file)
     log(f"Number of parameters: {sum(p.numel() for p in gen_model.parameters())}", log_file)
 
-    
-
     scheduler = torch.optim.lr_scheduler.StepLR(
         optimizer, 
         step_size=len(train_dataloader) * 2, 
@@ -89,13 +87,15 @@ def main(args):
             log_file
         )
 
-        # valid_history = valid_gen_net(model, valid_dataloader, accuracy, criterion)
-        # log(
-        #     f"[Valid] Epoch: {epoch+1}/{configs.mel_generator_cfg['epochs']} - " + 
-        #     f"Loss: {valid_history['loss']} | " + 
-        #     f"Accuracy: {valid_history['accuracy']}",
-        #     log_file
-        # )
+        valid_history = valid_gen_net(gen_model, valid_dataloader, accuracy, log_file)
+        log(
+            f"[Valid] Epoch: {epoch+1}/{configs.mel_generator_cfg['epochs']} - " +
+            f"Loss: {valid_history['loss']} | " +
+            f"WER: {valid_history['wer']} | " +
+            f"SER: {valid_history['ser']} | " +
+            f"Speaker Accuracy: {valid_history['speaker_accuracy']}",
+            log_file
+        )
 
         torch.save(gen_model.state_dict(), os.path.join(result_dir, f"gen_model_epoch_{epoch+1}.pt"))
 

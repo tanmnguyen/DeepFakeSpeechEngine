@@ -154,12 +154,9 @@ def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, log_f
             labels.to(configs.device), \
             speaker_labels.to(configs.device)
 
-       
-
         loss, spk_output, asr_output, mel_mse = model.train_generator(
             melspectrogram_features, tokens, labels, speaker_labels
         )
-        
 
         if optimizer.param_groups[0]['lr'] >= configs.mel_generator_cfg['min_lr']:
             scheduler.step()
@@ -175,7 +172,7 @@ def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, log_f
             epoch_spk_acc += acc
 
         torch.cuda.empty_cache()
-        if i % 1 == 0:
+        if i % 100 == 0:
             log(f"Loss: {epoch_loss / (i+1):.4f} " + \
                 f"| WER: {epoch_wer / (i+1):.4f} " + \
                 f"| SER: {epoch_ser / (i+1):.4f} " + \
@@ -191,5 +188,46 @@ def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, log_f
         'speaker_accuracy': epoch_spk_acc / len(train_dataloader)
     }
 
-def valid_gen_net():
-    pass 
+def valid_gen_net(model, valid_dataloader, accuracy, log_file):
+    model.generator.eval()
+    model.asr_model.eval()
+    model.spk_model.eval()
+
+    epoch_loss, epoch_wer, epoch_ser, epoch_spk_acc, epoch_mel_mse = 0.0, 0.0, 0.0, 0.0, 0.0
+    for i, (melspectrogram_features, tokens, labels, speaker_labels) in enumerate(tqdm(valid_dataloader)):
+        melspectrogram_features, tokens, labels, speaker_labels = \
+            melspectrogram_features.to(configs.device), \
+            tokens.to(configs.device), \
+            labels.to(configs.device), \
+            speaker_labels.to(configs.device)
+
+        with torch.no_grad():
+            loss, spk_output, asr_output, mel_mse = model.valid_generator(
+                melspectrogram_features, tokens, labels, speaker_labels
+            )
+
+            wer, ser = compute_error_rate(asr_output, labels)
+            acc = accuracy(spk_output, speaker_labels)
+
+            epoch_mel_mse += mel_mse.item()
+            epoch_loss += loss.item()
+            epoch_wer += wer
+            epoch_ser += ser
+            epoch_spk_acc += acc
+
+        torch.cuda.empty_cache()
+
+    log(f"Loss: {epoch_loss / len(valid_dataloader):.4f} " + \
+        f"| WER: {epoch_wer / len(valid_dataloader):.4f} " + \
+        f"| SER: {epoch_ser / len(valid_dataloader):.4f} " + \
+        f"| Speaker Accuracy: {epoch_spk_acc / len(valid_dataloader):.4f} " + \
+        f"| Mel MSE: {epoch_mel_mse / len(valid_dataloader):.4f}", log_file)
+
+    return {
+        'loss': epoch_loss / len(valid_dataloader),
+        'wer': epoch_wer / len(valid_dataloader),
+        'ser': epoch_ser / len(valid_dataloader),
+        'mel_mse': epoch_mel_mse / len(valid_dataloader), 
+        'speaker_accuracy': epoch_spk_acc / len(valid_dataloader)
+    }
+    
