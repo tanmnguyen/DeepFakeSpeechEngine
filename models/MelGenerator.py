@@ -95,4 +95,4 @@ class MelGenerator(nn.Module):
                 x.contiguous().view(x.shape[0], -1)
             )
 
-        return loss_spk, spk_output, loss_asr, asr_output, mel_mse
+        return loss_spk, spk_output, asr_output, mel_mse
