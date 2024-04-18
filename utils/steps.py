@@ -141,12 +141,13 @@ def valid_spk_net(model, valid_dataloader, accuracy, criterion):
         'accuracy': epoch_acc / len(valid_dataloader)
     }
 
-def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, log_file):
-    model.generator.train() 
-    model.asr_model.eval()
-    model.spk_model.eval()
-
-    epoch_loss, epoch_wer, epoch_ser, epoch_spk_acc, epoch_mel_mse = 0.0, 0.0, 0.0, 0.0, 0.0
+def train_gen_net(model, train_dataloader, accuracy, log_file, train_spk=True):
+    # model.generator.train() 
+    # model.asr_model.eval()
+    # model.spk_model.eval()
+    epoch_loss, epoch_wer, epoch_ser, epoch_spk_acc, \
+        epoch_mel_mse, epoch_loss_spk, epoch_loss_asr = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 
+    
     for i, (melspectrogram_features, tokens, labels, speaker_labels) in enumerate(tqdm(train_dataloader)):
         melspectrogram_features, tokens, labels, speaker_labels = \
             melspectrogram_features.to(configs.device), \
@@ -154,12 +155,12 @@ def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, log_f
             labels.to(configs.device), \
             speaker_labels.to(configs.device)
 
-        loss, spk_output, asr_output, mel_mse = model.train_generator(
+        loss, spk_output, asr_output, mel_mse, loss_spk, loss_asr = model.train_generator(
             melspectrogram_features, tokens, labels, speaker_labels
         )
 
-        if optimizer.param_groups[0]['lr'] >= configs.mel_generator_cfg['min_lr']:
-            scheduler.step()
+        if train_spk:
+            loss_spk, _ = model.train_speaker_recognizer(melspectrogram_features, speaker_labels)
 
         with torch.no_grad():
             wer, ser = compute_error_rate(asr_output, labels)
@@ -170,6 +171,8 @@ def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, log_f
             epoch_wer += wer
             epoch_ser += ser
             epoch_spk_acc += acc
+            epoch_loss_spk += loss_spk.item()
+            epoch_loss_asr += loss_asr.item()
 
         torch.cuda.empty_cache()
         if i % 100 == 0:
@@ -178,7 +181,9 @@ def train_gen_net(model, train_dataloader, scheduler, optimizer, accuracy, log_f
                 f"| SER: {epoch_ser / (i+1):.4f} " + \
                 f"| Speaker Accuracy: {epoch_spk_acc / (i+1):.4f} " + \
                 f"| Mel MSE: {epoch_mel_mse / (i+1):.4f}" + \
-                f"| LR: {optimizer.param_groups[0]['lr']:.4f}", log_file)
+                f"| SPK Loss: {epoch_loss_spk / (i+1):.4f}" + \
+                f"| ASR Loss: {epoch_loss_asr / (i+1):.4}" + \
+                f"| LR: {model.gen_optimizer.param_groups[0]['lr']:.4f}", log_file)
 
     return {
         'loss': epoch_loss / len(train_dataloader),
@@ -193,7 +198,8 @@ def valid_gen_net(model, valid_dataloader, accuracy, log_file):
     model.asr_model.eval()
     model.spk_model.eval()
 
-    epoch_loss, epoch_wer, epoch_ser, epoch_spk_acc, epoch_mel_mse = 0.0, 0.0, 0.0, 0.0, 0.0
+    epoch_loss, epoch_wer, epoch_ser, epoch_spk_acc, \
+        epoch_mel_mse, epoch_loss_spk, epoch_loss_asr = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 
     for i, (melspectrogram_features, tokens, labels, speaker_labels) in enumerate(tqdm(valid_dataloader)):
         melspectrogram_features, tokens, labels, speaker_labels = \
             melspectrogram_features.to(configs.device), \
@@ -202,7 +208,7 @@ def valid_gen_net(model, valid_dataloader, accuracy, log_file):
             speaker_labels.to(configs.device)
 
         with torch.no_grad():
-            loss, spk_output, asr_output, mel_mse = model.valid_generator(
+            loss, spk_output, asr_output, mel_mse, loss_spk, loss_asr = model.valid_generator(
                 melspectrogram_features, tokens, labels, speaker_labels
             )
 
@@ -214,14 +220,19 @@ def valid_gen_net(model, valid_dataloader, accuracy, log_file):
             epoch_wer += wer
             epoch_ser += ser
             epoch_spk_acc += acc
+            epoch_loss_spk += loss_spk.item()
+            epoch_loss_asr += loss_asr.item()
 
         torch.cuda.empty_cache()
 
-    log(f"Loss: {epoch_loss / len(valid_dataloader):.4f} " + \
-        f"| WER: {epoch_wer / len(valid_dataloader):.4f} " + \
-        f"| SER: {epoch_ser / len(valid_dataloader):.4f} " + \
-        f"| Speaker Accuracy: {epoch_spk_acc / len(valid_dataloader):.4f} " + \
-        f"| Mel MSE: {epoch_mel_mse / len(valid_dataloader):.4f}", log_file)
+    log(f"Loss: {epoch_loss / (i+1):.4f} " + \
+                f"| WER: {epoch_wer / (i+1):.4f} " + \
+                f"| SER: {epoch_ser / (i+1):.4f} " + \
+                f"| Speaker Accuracy: {epoch_spk_acc / (i+1):.4f} " + \
+                f"| Mel MSE: {epoch_mel_mse / (i+1):.4f}" + \
+                f"| SPK Loss: {epoch_loss_spk / (i+1):.4f}" + \
+                f"| ASR Loss: {epoch_loss_asr / (i+1):.4}" + \
+                f"| LR: {model.gen_optimizer.param_groups[0]['lr']:.4f}", log_file)
 
     return {
         'loss': epoch_loss / len(valid_dataloader),

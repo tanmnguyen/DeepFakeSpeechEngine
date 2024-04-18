@@ -11,7 +11,7 @@ import torch.optim as optim
 from utils.io import log
 from torchmetrics import Accuracy
 from torch.utils.data import DataLoader
-from utils.networks import load_asr, load_spk
+from utils.networks import load_state_dict
 from utils.steps import train_gen_net, valid_gen_net
 from utils.batch import spectrogram_generation_collate_fn
 from datasets.SpectrogramGenerationDataset import SpectrogramGenerationDataset
@@ -41,22 +41,32 @@ def main(args):
         collate_fn=spectrogram_generation_collate_fn, 
         shuffle=False
     )
-    
-    gen_model = MelGenerator(input_channels=80).to(configs.device)
-    # asr_model = load_asr(configs.mel_generator_cfg['asr_weight'])
-    # spk_model = load_spk(configs.mel_generator_cfg['spk_weight'], num_classes=dataset.num_classes)
 
+    gen_model = MelGenerator(
+        asr_model=None, 
+        spk_model=None
+    ).to(configs.device)
+    
+    gen_model = load_state_dict(gen_model, args.weight)
     gen_model.eval()
+    index = 1
     for i, (melspectrogram_features, tokens, labels, speaker_labels) in enumerate(train_dataloader):
         melspectrogram_features, tokens, labels, speaker_labels = \
             melspectrogram_features.to(configs.device), \
             tokens.to(configs.device), \
             labels.to(configs.device), \
             speaker_labels.to(configs.device)
+        
         output = gen_model(melspectrogram_features)
 
-        inv_audio = librosa.feature.inverse.mel_to_audio(output[0].numpy(), sr=16000, n_fft=400, hop_length=160, window="hann")
+        inv_audio = librosa.feature.inverse.mel_to_audio(
+            output[index].detach().numpy(), sr=16000, n_fft=400, hop_length=160, window="hann"
+        )
+        ori_audio = librosa.feature.inverse.mel_to_audio(
+            melspectrogram_features[index].detach().numpy(), sr=16000, n_fft=400, hop_length=160, window="hann"
+        ) 
         sf.write("inverted.wav", inv_audio, 16000)
+        sf.write("original.wav", ori_audio, 16000)
 
         print(output.shape)
         break
@@ -75,6 +85,12 @@ if __name__ == '__main__':
                         default="train",
                         required=False,
                         help="[train/test/dev] set")
+    
+    parser.add_argument('-weight',
+                        '--weight',
+                        type=str,
+                        required=True,
+                        help="path to a weight file of the generator model")
 
 
     args = parser.parse_args()

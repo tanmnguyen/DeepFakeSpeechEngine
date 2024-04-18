@@ -55,12 +55,32 @@ def main(args):
         spk_model=spk_model
     ).to(configs.device)
 
-    optimizer = optim.Adam(gen_model.generator.parameters(), 
+    gen_optimizer = optim.Adam(gen_model.generator.parameters(), 
         lr=configs.mel_generator_cfg['learning_rate'], 
         eps=1e-8
     )
 
-    gen_model.set_gen_optimizer(optimizer)
+    gen_scheduler = torch.optim.lr_scheduler.StepLR(
+        gen_optimizer, 
+        step_size=len(train_dataloader) * 2, 
+        gamma=configs.mel_generator_cfg['scheduler_gamma']
+    )
+
+    gen_model.set_gen_optimizer(gen_optimizer, gen_scheduler)
+
+
+    spk_optimizer = optim.Adam(spk_model.parameters(), 
+        lr=configs.speaker_recognition_cfg['learning_rate'], 
+        eps=1e-8
+    )
+
+    spk_scheduler = torch.optim.lr_scheduler.StepLR(
+        spk_optimizer, 
+        step_size=len(train_dataloader) * 3, 
+        gamma=configs.speaker_recognition_cfg['scheduler_gamma']
+    )
+
+    gen_model.set_spk_optimizer(spk_optimizer, spk_scheduler)
     
     log(gen_model, log_file)
     log(f"Device: {configs.device}", log_file)
@@ -68,16 +88,10 @@ def main(args):
     log(f"Valid set size: {len(valid_dataset)}", log_file)
     log(f"Number of parameters: {sum(p.numel() for p in gen_model.parameters())}", log_file)
 
-    scheduler = torch.optim.lr_scheduler.StepLR(
-        optimizer, 
-        step_size=len(train_dataloader) * 2, 
-        gamma=configs.mel_generator_cfg['scheduler_gamma']
-    )
-
     accuracy = Accuracy(task="multiclass", num_classes=dataset.num_classes).to(configs.device)
 
     for epoch in range(configs.speaker_recognition_cfg['epochs']):
-        train_history = train_gen_net(gen_model, train_dataloader, scheduler, optimizer, accuracy, log_file)
+        train_history = train_gen_net(gen_model, train_dataloader, accuracy, log_file)
         log(
             f"[Train] Epoch: {epoch+1}/{configs.mel_generator_cfg['epochs']} - " +
             f"Loss: {train_history['loss']} | " +

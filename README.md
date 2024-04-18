@@ -38,3 +38,9 @@ CUDA_VISIBLE_DEVICES=1 python train_generator.py --data egs/tedlium/data/ --set 
 ```
 
 kaldi/src/featbin/compute-spectrogram-feats --output-format=kaldi "scp:egs/tedlium/data/train/wav.scp" "ark:egs/tedlium/data/train/spectrogram_feats.ark"
+
+## Inference 
+Inference generator 
+```bash 
+python gen_inference.py --data egs/tedlium/data/ --set train
+```
