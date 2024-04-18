@@ -15,8 +15,18 @@ class Generator(nn.Module):
         self.fc = nn.Linear(in_channels, in_channels)
         self.relu = nn.ReLU() 
 
-        self.melspec_encoder = nn.TransformerEncoder(
-            nn.TransformerEncoderLayer(d_model=in_channels, nhead=8), 
+        self.melspec_encoder_1 = nn.TransformerEncoder(
+            nn.TransformerEncoderLayer(d_model=in_channels, nhead=2), 
+            num_layers=2
+        )
+
+        self.melspec_encoder_2 = nn.TransformerEncoder(
+            nn.TransformerEncoderLayer(d_model=in_channels, nhead=2), 
+            num_layers=2
+        )
+
+        self.melspec_encoder_3 = nn.TransformerEncoder(
+            nn.TransformerEncoderLayer(d_model=in_channels, nhead=2), 
             num_layers=2
         )
 
@@ -27,18 +37,27 @@ class Generator(nn.Module):
         """ 
         x shape: (batch_size, input_channels, seq_len) 
         """
+        x0 = x 
 
-        mel_x0 = rearrange(x, 'b c t -> b t c') # rearrange to (batch_size, seq_len, input_channels)
-        mel_x1 = self.fc(mel_x0)
-        mel_x1 = self.relu(mel_x1) + mel_x0 
+        # rearrange to (batch_size, seq_len, input_channels)
+        x = rearrange(x, 'b c t -> b t c') 
 
-        mel_latent = self.melspec_encoder(mel_x1) # (batch_size, seq_len, in_channels)
-        mel_latent = self.relu(mel_latent)  
+        y = self.fc(x)
+        x = self.relu(y) + x 
 
-        out = rearrange(mel_latent, 'b t c -> b c t') # rearrange to (batch_size, input_channels, seq_len)
-        out = out + x 
+        y = self.melspec_encoder_1(x) # (batch_size, seq_len, in_channels)
+        x = self.relu(y) + x
 
-        return out
+        y = self.melspec_encoder_2(x) # (batch_size, seq_len, in_channels)
+        x = self.relu(y) + x
+
+        y = self.melspec_encoder_3(x) # (batch_size, seq_len, in_channels)
+        x = self.relu(y) + x
+
+        x = rearrange(x, 'b t c -> b c t') # rearrange to (batch_size, input_channels, seq_len)
+        x = self.relu(x) + x0 
+
+        return x
 
 
 class MelGenerator(nn.Module):
