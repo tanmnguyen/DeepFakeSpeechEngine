@@ -142,9 +142,6 @@ def valid_spk_net(model, valid_dataloader, accuracy, criterion):
     }
 
 def train_gen_net(model, train_dataloader, accuracy, log_file, train_spk=True):
-    # model.generator.train() 
-    # model.asr_model.eval()
-    # model.spk_model.eval()
     epoch_loss, epoch_wer, epoch_ser, epoch_spk_acc, \
         epoch_mel_mse, epoch_loss_spk, epoch_loss_asr = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 
     
