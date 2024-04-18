@@ -9,10 +9,10 @@ import soundfile as sf
 import torch.optim as optim
 
 from utils.io import log
-from torchmetrics import Accuracy
+from utils.networks import load_asr
 from torch.utils.data import DataLoader
 from utils.networks import load_state_dict
-from utils.steps import train_gen_net, valid_gen_net
+from utils.batch import process_mel_spectrogram
 from utils.batch import spectrogram_generation_collate_fn
 from datasets.SpectrogramGenerationDataset import SpectrogramGenerationDataset
 
@@ -46,10 +46,12 @@ def main(args):
         asr_model=None, 
         spk_model=None
     ).to(configs.device)
+
+    asr_model = load_asr(configs.mel_generator_cfg['asr_weight'])
     
     gen_model = load_state_dict(gen_model, args.weight)
     gen_model.eval()
-    index = 1
+    index = 2
     for i, (melspectrogram_features, tokens, labels, speaker_labels) in enumerate(train_dataloader):
         melspectrogram_features, tokens, labels, speaker_labels = \
             melspectrogram_features.to(configs.device), \
@@ -68,8 +70,13 @@ def main(args):
         sf.write("inverted.wav", inv_audio, 16000)
         sf.write("original.wav", ori_audio, 16000)
 
-        print(output.shape)
-        break
+        processed_mel = process_mel_spectrogram(output[index].unsqueeze(0))
+        # decode with asr model 
+        asr_output = asr_model.decode(processed_mel)
+        print(asr_output)
+
+        return
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')

@@ -90,8 +90,12 @@ class MelGenerator(nn.Module):
         self.zero_grad() 
     
         gen_melspec = self.generator(x)
-        processed_gen_melspec = process_mel_spectrogram(gen_melspec)
+        magnitude_loss = nn.functional.mse_loss(
+            torch.norm(gen_melspec, p=2, dim=(1,2)), 
+            torch.norm(x, p=2, dim=(1,2))
+        )
 
+        processed_gen_melspec = process_mel_spectrogram(gen_melspec)
         loss_spk, spk_output = self.spk_model.neg_cross_entropy_loss(processed_gen_melspec, speaker_labels)
         loss_asr, asr_output = self.asr_model.loss(processed_gen_melspec, tokens, labels, encoder_no_grad=False)
 
@@ -101,7 +105,7 @@ class MelGenerator(nn.Module):
                 x.contiguous().view(x.shape[0], -1)
             )
         
-        loss = loss_asr + loss_spk
+        loss = magnitude_loss + loss_asr + loss_spk
         
         loss.backward()
         self.gen_optimizer.step()
@@ -131,18 +135,18 @@ class MelGenerator(nn.Module):
 
         return loss_spk, spk_output
 
-    def valid_generator(self, x, tokens, labels, speaker_labels):
-        with torch.no_grad():
-            gen_melspec = self.generator(x)
-            processed_gen_melspec = process_mel_spectrogram(gen_melspec)
+    # def valid_generator(self, x, tokens, labels, speaker_labels):
+    #     with torch.no_grad():
+    #         gen_melspec = self.generator(x)
+    #         processed_gen_melspec = process_mel_spectrogram(gen_melspec)
 
-            loss_spk, spk_output = self.spk_model.neg_cross_entropy_loss(processed_gen_melspec, speaker_labels)
-            loss_asr, asr_output = self.asr_model.loss(processed_gen_melspec, tokens, labels, encoder_no_grad=False)
+    #         loss_spk, spk_output = self.spk_model.neg_cross_entropy_loss(processed_gen_melspec, speaker_labels)
+    #         loss_asr, asr_output = self.asr_model.loss(processed_gen_melspec, tokens, labels, encoder_no_grad=False)
 
-            loss = loss_asr + loss_spk
-            mel_mse = nn.functional.mse_loss(
-                gen_melspec.contiguous().view(x.shape[0], -1), 
-                x.contiguous().view(x.shape[0], -1)
-            )
+    #         loss = loss_asr + loss_spk
+    #         mel_mse = nn.functional.mse_loss(
+    #             gen_melspec.contiguous().view(x.shape[0], -1), 
+    #             x.contiguous().view(x.shape[0], -1)
+    #         )
 
-        return loss, spk_output, asr_output, mel_mse, loss_spk, loss_asr
+    #     return loss, spk_output, asr_output, mel_mse, loss_spk, loss_asr

@@ -42,5 +42,5 @@ kaldi/src/featbin/compute-spectrogram-feats --output-format=kaldi "scp:egs/tedli
 ## Inference 
 Inference generator 
 ```bash 
-python gen_inference.py --data egs/tedlium/data/ --set train
+python gen_inference.py --data egs/tedlium/data/ --set train --weight weights/gen/gen_model.pt
 ```
