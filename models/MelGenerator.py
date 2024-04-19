@@ -96,7 +96,7 @@ class Generator(nn.Module):
             max_len = max([len(text) for text in batch_text])
             for i in range(len(batch_text)):
                 batch_text[i] = torch.cat(
-                    [batch_text[i], torch.zeros(max_len - len(batch_text[i])).long().to(configs.device)]
+                    [batch_text[i].to(configs.device), torch.zeros(max_len - len(batch_text[i])).long().to(configs.device)]
                 )
 
             # concat to batch dim 
