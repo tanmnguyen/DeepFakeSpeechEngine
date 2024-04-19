@@ -181,7 +181,7 @@ def train_gen_net(model, train_dataloader, accuracy, log_file, train_spk=True):
                 f"| Mel MSE: {epoch_mel_mse / (i+1):.4f}" + \
                 f"| SPK Loss: {epoch_loss_spk / (i+1):.4f}" + \
                 f"| ASR Loss: {epoch_loss_asr / (i+1):.4}" + \
-                f"| Disc Avg Pred: {epoch_disc_acc / (i+1):.4}" + \
+                f"| Disc Avg Acc: {epoch_disc_acc / (i+1):.4}" + \
                 f"| LR: {model.gen_optimizer.param_groups[0]['lr']:.4f}", log_file)
 
     return {
