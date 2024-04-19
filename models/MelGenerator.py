@@ -108,17 +108,11 @@ class MelGenerator(nn.Module):
         processed_gen_melspec = process_mel_spectrogram(gen_melspec)
         loss_spk, spk_output = self.spk_model.loss(processed_gen_melspec, speaker_labels)
         loss_asr, asr_output = self.asr_model.loss(processed_gen_melspec, tokens, labels, encoder_no_grad=False)
-        loss = loss_asr / loss_spk 
-        loss.backward()
-
-        # train adversarial generator 
-        self.gen_optimizer.zero_grad()
-        self.zero_grad() 
-        labels = torch.ones(x.shape[0], 1).to(configs.device)
-        adv_gen_loss = self.discriminator.loss(gen_melspec, labels)
-        adv_gen_loss.backward()
+        adv_gen_loss = self.discriminator.loss(gen_melspec, torch.ones(x.shape[0], 1).to(configs.device))
+        loss = loss_asr / loss_spk + adv_gen_loss
 
         # update generator
+        loss.backward()
         self.gen_optimizer.step()
         
         if self.gen_optimizer.param_groups[0]['lr'] >= configs.mel_generator_cfg['min_lr']:
