@@ -36,6 +36,7 @@ class Generator(nn.Module):
         )
 
         self.fc_out = nn.Linear(in_channels, in_channels)
+        self.prelu = nn.PReLU()
 
     def forward(self, x):
         """ 
@@ -62,7 +63,7 @@ class Generator(nn.Module):
         x = self.fc_out(x)
 
         x = rearrange(x, 'b t c -> b c t') # rearrange to (batch_size, input_channels, seq_len)
-        # x = self.relu(x) + x0 
+        x = self.prelu(x) + x0 
 
         return x
 
