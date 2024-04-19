@@ -18,59 +18,65 @@ class Generator(nn.Module):
         super(Generator, self).__init__()
 
         # content encoder 
-        self.asr_encoder = asr_model.whisper_model.encoder
-        self.asr_encoder.require_grad = False
+        # self.asr_encoder = asr_model.whisper_model.encoder
 
-        self.conv_mel = nn.Conv1d(in_channels=in_channels, out_channels=hidden_channels, kernel_size=1)
+        # self.conv_mel = nn.Conv1d(in_channels=in_channels, out_channels=hidden_channels, kernel_size=1)
 
-        # mel spectrogram decoder 
-        self.melspec_decoder = nn.TransformerDecoder(
-            nn.TransformerDecoderLayer(d_model=384, nhead=2, batch_first=True), 
-            num_layers=2
-        )
+        # # mel spectrogram decoder 
+        # self.melspec_decoder = nn.TransformerDecoder(
+        #     nn.TransformerDecoderLayer(d_model=384, nhead=2, batch_first=True), 
+        #     num_layers=2
+        # )
 
-        self.conv_out = nn.Conv1d(in_channels=hidden_channels, out_channels=out_channels, kernel_size=1)
+        # self.conv_out = nn.Conv1d(in_channels=hidden_channels, out_channels=out_channels, kernel_size=1)
+        self.fc = nn.Linear(80, 80)
 
     def get_trainable_parameters(self, default_lr):
         return [
-            {'params': self.conv_mel.parameters(), 'lr': default_lr},
-            {'params': self.melspec_decoder.parameters(), 'lr': default_lr},
-            {'params': self.conv_out.parameters(), 'lr': default_lr}
+            {'params': self.fc.parameters(), 'lr': default_lr}
         ]
+        # do not update asr encoder model 
+        # return [
+        #     {'params': self.conv_mel.parameters(), 'lr': default_lr},
+        #     {'params': self.melspec_decoder.parameters(), 'lr': default_lr},
+        #     {'params': self.conv_out.parameters(), 'lr': default_lr}
+        # ]
 
     def forward(self, x):
         """
         x shape: (batch_size, input_channels, seq_len)
         """
+        return self.fc(x)
+    
+        # # content encoder
+        # x_encoded = process_mel_spectrogram(x)
+        # x_encoded = self.asr_encoder(x_encoded)
 
-        # content encoder
-        with torch.no_grad():
-            x_encoded = process_mel_spectrogram(x)
-            x_encoded = self.asr_encoder(x_encoded)
+        # # conv mel
+        # x = self.conv_mel(x) 
+        # x = rearrange(x, 'b c t -> b t c')
 
-        # conv mel
-        x = self.conv_mel(x) 
-        x = rearrange(x, 'b c t -> b t c')
+        # # decode using transformer 
+        # x_decoded = self.melspec_decoder(tgt=x, memory=x_encoded)
+        # x_decoded = rearrange(x_decoded, 'b t c -> b c t')
 
-        # decode using transformer 
-        x_decoded = self.melspec_decoder(tgt=x, memory=x_encoded)
-        x_decoded = rearrange(x_decoded, 'b t c -> b c t')
+        # # conv out 
+        # output = self.conv_out(x_decoded)
 
-        # conv out 
-        output = self.conv_out(x_decoded)
-
-        return output, x_encoded
+        # return output, x_encoded
     
     def loss_content_encoder(self, mel):
-        output, tru_encoded = self(mel)
+        out = self(mel)
+        return nn.functional.mse_loss(out.view(out.shape[0], -1), mel.view(out.shape[0], -1)), out, process_mel_spectrogram(out)
+        # output, tru_encoded = self(mel)
         
-        processed_output = process_mel_spectrogram(output)
-        gen_encoded = self.asr_encoder(processed_output)
+        # processed_output = process_mel_spectrogram(output)
+        # gen_encoded = self.asr_encoder(processed_output)
 
-        return nn.functional.mse_loss(
-            gen_encoded.contiguous().view(mel.shape[0], -1),
-            tru_encoded.contiguous().view(mel.shape[0], -1),
-        ), output, processed_output
+        # return nn.functional.mse_loss(
+        #     gen_encoded.contiguous().view(mel.shape[0], -1),
+        #     tru_encoded.contiguous().view(mel.shape[0], -1),
+        # ), output, processed_output
         
 
 class MelGenerator(nn.Module):
