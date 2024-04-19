@@ -51,7 +51,7 @@ def main(args):
     
     gen_model = load_state_dict(gen_model, args.weight)
     gen_model.eval()
-    index = 2
+    index = 1
     for i, (melspectrogram_features, tokens, labels, speaker_labels) in enumerate(train_dataloader):
         melspectrogram_features, tokens, labels, speaker_labels = \
             melspectrogram_features.to(configs.device), \

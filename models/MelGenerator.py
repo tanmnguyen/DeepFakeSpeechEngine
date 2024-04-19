@@ -98,8 +98,8 @@ class MelGenerator(nn.Module):
         # train adversarial discriminator
         self.discriminator.zero_grad()
         self.dis_optimizer.zero_grad()
-        loss_d_real = self.discriminator.loss(x, torch.ones(x.shape[0], 1).to(configs.device))
-        loss_d_fake = self.discriminator.loss(gen_melspec.detach(), torch.zeros(x.shape[0], 1).to(configs.device))
+        loss_d_real = self.discriminator.loss(x, torch.ones(x.shape[0],).to(configs.device))
+        loss_d_fake = self.discriminator.loss(gen_melspec.detach(), torch.zeros(x.shape[0],).to(configs.device))
         loss_d = loss_d_real + loss_d_fake
         loss_d.backward()
         self.dis_optimizer.step()
@@ -108,7 +108,7 @@ class MelGenerator(nn.Module):
         processed_gen_melspec = process_mel_spectrogram(gen_melspec)
         loss_spk, spk_output = self.spk_model.loss(processed_gen_melspec, speaker_labels)
         loss_asr, asr_output = self.asr_model.loss(processed_gen_melspec, tokens, labels, encoder_no_grad=False)
-        adv_gen_loss = self.discriminator.loss(gen_melspec, torch.ones(x.shape[0], 1).to(configs.device))
+        adv_gen_loss = self.discriminator.loss(gen_melspec, torch.ones(x.shape[0],).to(configs.device))
         loss = loss_asr / loss_spk + adv_gen_loss
 
         # update generator
