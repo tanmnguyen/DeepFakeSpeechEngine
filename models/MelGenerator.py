@@ -53,16 +53,16 @@ class Generator(nn.Module):
         x = self.relu(y) + x 
 
         y = self.melspec_encoder_1(x) # (batch_size, seq_len, in_channels)
-        y = self.fc1(y)
-        x = self.relu(y) + x
+        z = self.fc1(x)
+        x = self.relu(y + z) + x
 
         y = self.melspec_encoder_2(x) # (batch_size, seq_len, in_channels)
-        y = self.fc2(y)
-        x = self.relu(y) + x
+        z = self.fc2(x)
+        x = self.relu(y + z) + x
 
         y = self.melspec_encoder_3(x) # (batch_size, seq_len, in_channels)
-        y = self.fc3(y)
-        x = self.relu(y) + x
+        z = self.fc3(x)
+        x = self.relu(y + z) + x
 
         x = rearrange(x, 'b t c -> b c t') # rearrange to (batch_size, input_channels, seq_len)
         x = self.relu(x) + x0 
