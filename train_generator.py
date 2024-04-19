@@ -55,8 +55,10 @@ def main(args):
         spk_model=spk_model
     ).to(configs.device)
 
-    gen_optimizer = optim.Adam(gen_model.generator.parameters(), 
-        lr=configs.mel_generator_cfg['learning_rate'], 
+    gen_optimizer = optim.Adam(
+        gen_model.generator.get_trainable_parameters(
+            default_lr=configs.mel_generator_cfg['learning_rate'],
+        ), 
         eps=1e-8
     )
 
