@@ -22,16 +22,19 @@ class Generator(nn.Module):
             nn.TransformerEncoderLayer(d_model=in_channels, nhead=2, batch_first=True), 
             num_layers=2
         )
+        self.fc1 = nn.Linear(in_channels, in_channels)
 
         self.melspec_encoder_2 = nn.TransformerEncoder(
             nn.TransformerEncoderLayer(d_model=in_channels, nhead=2, batch_first=True), 
             num_layers=2
         )
+        self.fc2 = nn.Linear(in_channels, in_channels)
 
         self.melspec_encoder_3 = nn.TransformerEncoder(
             nn.TransformerEncoderLayer(d_model=in_channels, nhead=2, batch_first=True), 
             num_layers=2
         )
+        self.fc3 = nn.Linear(in_channels, in_channels)
 
         self.fc_out = nn.Linear(in_channels, in_channels)
 
@@ -50,12 +53,15 @@ class Generator(nn.Module):
         x = self.relu(y) + x 
 
         y = self.melspec_encoder_1(x) # (batch_size, seq_len, in_channels)
+        y = self.fc1(y)
         x = self.relu(y) + x
 
         y = self.melspec_encoder_2(x) # (batch_size, seq_len, in_channels)
+        y = self.fc2(y)
         x = self.relu(y) + x
 
         y = self.melspec_encoder_3(x) # (batch_size, seq_len, in_channels)
+        y = self.fc3(y)
         x = self.relu(y) + x
 
         x = rearrange(x, 'b t c -> b c t') # rearrange to (batch_size, input_channels, seq_len)
