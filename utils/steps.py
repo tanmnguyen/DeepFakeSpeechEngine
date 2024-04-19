@@ -143,7 +143,7 @@ def valid_spk_net(model, valid_dataloader, accuracy, criterion):
 
 def train_gen_net(model, train_dataloader, accuracy, log_file, train_spk=True):
     epoch_loss, epoch_wer, epoch_ser, epoch_spk_acc, \
-        epoch_mel_mse, epoch_loss_spk, epoch_loss_asr = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 
+        epoch_mel_mse, epoch_loss_spk, epoch_loss_asr, epoch_loss_disc = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
     
     for i, (melspectrogram_features, tokens, labels, speaker_labels) in enumerate(tqdm(train_dataloader)):
         melspectrogram_features, tokens, labels, speaker_labels = \
@@ -152,7 +152,7 @@ def train_gen_net(model, train_dataloader, accuracy, log_file, train_spk=True):
             labels.to(configs.device), \
             speaker_labels.to(configs.device)
 
-        loss, spk_output, asr_output, mel_mse, loss_spk, loss_asr = model.train_generator(
+        loss, spk_output, asr_output, mel_mse, loss_spk, loss_asr, loss_d = model.train_generator(
             melspectrogram_features, tokens, labels, speaker_labels
         )
 
@@ -170,6 +170,7 @@ def train_gen_net(model, train_dataloader, accuracy, log_file, train_spk=True):
             epoch_spk_acc += acc
             epoch_loss_spk += loss_spk.item()
             epoch_loss_asr += loss_asr.item()
+            epoch_loss_disc += loss_d.item()
 
         torch.cuda.empty_cache()
         if i % 1 == 0:
@@ -180,6 +181,7 @@ def train_gen_net(model, train_dataloader, accuracy, log_file, train_spk=True):
                 f"| Mel MSE: {epoch_mel_mse / (i+1):.4f}" + \
                 f"| SPK Loss: {epoch_loss_spk / (i+1):.4f}" + \
                 f"| ASR Loss: {epoch_loss_asr / (i+1):.4}" + \
+                f"| Disc Loss: {epoch_loss_disc / (i+1):.4}" + \
                 f"| LR: {model.gen_optimizer.param_groups[0]['lr']:.4f}", log_file)
 
     return {

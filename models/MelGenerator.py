@@ -4,9 +4,11 @@ sys.path.append("../")
 import torch 
 import configs 
 import torch.nn as nn 
-from einops import rearrange
-from utils.batch import process_mel_spectrogram
+import torch.optim as optim
 
+from einops import rearrange
+from .Discriminator import Discriminator
+from utils.batch import process_mel_spectrogram
 
 class Generator(nn.Module):
     def __init__(self, in_channels=80):
@@ -66,6 +68,8 @@ class MelGenerator(nn.Module):
         self.generator = Generator()
         self.asr_model = asr_model 
         self.spk_model = spk_model
+        self.discriminator = Discriminator()
+        self.dis_optimizer = optim.Adam(self.discriminator.parameters(), lr=0.0002, betas=(0.5, 0.999))
 
     def set_gen_optimizer(self, gen_optimizer, gen_scheduler):
         self.gen_optimizer = gen_optimizer
@@ -90,32 +94,43 @@ class MelGenerator(nn.Module):
         self.zero_grad() 
     
         gen_melspec = self.generator(x)
-        magnitude_loss = nn.functional.mse_loss(
-            torch.norm(gen_melspec, p=2, dim=(1,2)), 
-            torch.norm(x, p=2, dim=(1,2))
-        )
 
+        # train adversarial discriminator
+        self.discriminator.zero_grad()
+        self.dis_optimizer.zero_grad()
+        loss_d_real = self.discriminator.loss(x, torch.ones(x.shape[0], 1).to(configs.device))
+        loss_d_fake = self.discriminator.loss(gen_melspec.detach(), torch.zeros(x.shape[0], 1).to(configs.device))
+        loss_d = loss_d_real + loss_d_fake
+        loss_d.backward()
+        self.dis_optimizer.step()
+        
+        # train content 
         processed_gen_melspec = process_mel_spectrogram(gen_melspec)
         loss_spk, spk_output = self.spk_model.loss(processed_gen_melspec, speaker_labels)
-        # loss_spk, spk_output = self.spk_model.neg_cross_entropy_loss(processed_gen_melspec, speaker_labels)
         loss_asr, asr_output = self.asr_model.loss(processed_gen_melspec, tokens, labels, encoder_no_grad=False)
+        loss = loss_asr / loss_spk 
+        loss.backward()
+
+        # train adversarial generator 
+        self.gen_optimizer.zero_grad()
+        self.zero_grad() 
+        labels = torch.ones(x.shape[0], 1).to(configs.device)
+        adv_gen_loss = self.discriminator.loss(gen_melspec, labels)
+        adv_gen_loss.backward()
+
+        # update generator
+        self.gen_optimizer.step()
+        
+        if self.gen_optimizer.param_groups[0]['lr'] >= configs.mel_generator_cfg['min_lr']:
+            self.gen_scheduler.step()
 
         with torch.no_grad():
             mel_mse = nn.functional.mse_loss(
                 gen_melspec.contiguous().view(x.shape[0], -1), 
                 x.contiguous().view(x.shape[0], -1)
             )
-        
-        loss = magnitude_loss + loss_asr / loss_spk
-        
-        loss.backward()
-        self.gen_optimizer.step()
 
-        # update scheduler 
-        if self.gen_optimizer.param_groups[0]['lr'] >= configs.mel_generator_cfg['min_lr']:
-            self.gen_scheduler.step()
-
-        return loss, spk_output, asr_output, mel_mse, loss_spk, loss_asr
+        return loss, spk_output, asr_output, mel_mse, loss_spk, loss_asr, loss_d
     
     def train_speaker_recognizer(self, x, speaker_labels):
         self.spk_model.train() 
