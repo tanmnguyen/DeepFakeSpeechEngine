@@ -34,4 +34,4 @@ class Discriminator(nn.Module):
     def loss(self, mel, labels):
         # torch.ones_like(output) 
         output = self.forward(mel).view(-1)
-        return nn.BCELoss()(output, labels), output
+        return nn.BCELoss()(output, labels.view(-1)), output
