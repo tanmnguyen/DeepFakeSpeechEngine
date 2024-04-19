@@ -90,7 +90,6 @@ class Generator(nn.Module):
                 processed, lengths = self.processor(res.text)
                 batch_text.append(processed.squeeze(0))
                 batch_len.append(lengths)
-                print(batch_text[-1].shape, batch_len[-1].shape)
 
             # max len 
             max_len = max([len(text) for text in batch_text])
