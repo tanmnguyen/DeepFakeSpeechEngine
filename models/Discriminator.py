@@ -9,7 +9,7 @@ class Discriminator(nn.Module):
     def __init__(self, feat_dim=80):
         super(Discriminator, self).__init__()
         self.encoder = nn.TransformerEncoder(
-            nn.TransformerEncoderLayer(d_model=feat_dim, nhead=2), 
+            nn.TransformerEncoderLayer(d_model=feat_dim, nhead=2, batch_first=True), 
             num_layers=2
         )
 
