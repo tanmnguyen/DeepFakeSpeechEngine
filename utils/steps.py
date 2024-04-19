@@ -156,8 +156,8 @@ def train_gen_net(model, train_dataloader, accuracy, log_file, train_spk=True):
             melspectrogram_features, tokens, labels, speaker_labels
         )
 
-        if train_spk:
-            loss_spk, _ = model.train_speaker_recognizer(melspectrogram_features, speaker_labels)
+        #if train_spk:
+        #    loss_spk, _ = model.train_speaker_recognizer(melspectrogram_features, speaker_labels)
 
         with torch.no_grad():
             wer, ser = compute_error_rate(asr_output, labels)
