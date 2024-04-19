@@ -11,61 +11,102 @@ from einops import rearrange
 from .Discriminator import Discriminator
 from utils.batch import process_mel_spectrogram
 
-class Generator(nn.Module):
-    def __init__(self, in_channels=80):
-        super(Generator, self).__init__()
+# class Generator(nn.Module):
+#     def __init__(self, in_channels=80):
+#         super(Generator, self).__init__()
 
-        self.fc1 = nn.Linear(in_channels, in_channels)
+#         self.fc1 = nn.Linear(in_channels, in_channels)
 
-        self.melspec_encoder_1 = nn.TransformerEncoder(
-            nn.TransformerEncoderLayer(d_model=in_channels, nhead=2, batch_first=True), 
-            num_layers=2
-        )
-        self.fc2 = nn.Linear(in_channels, in_channels)
+#         self.melspec_encoder_1 = nn.TransformerEncoder(
+#             nn.TransformerEncoderLayer(d_model=in_channels, nhead=2, batch_first=True), 
+#             num_layers=2
+#         )
+#         self.fc2 = nn.Linear(in_channels, in_channels)
 
-        self.melspec_encoder_2 = nn.TransformerEncoder(
-            nn.TransformerEncoderLayer(d_model=in_channels, nhead=2, batch_first=True), 
-            num_layers=2
-        )
-        self.fc3 = nn.Linear(in_channels, in_channels)
+#         self.melspec_encoder_2 = nn.TransformerEncoder(
+#             nn.TransformerEncoderLayer(d_model=in_channels, nhead=2, batch_first=True), 
+#             num_layers=2
+#         )
+#         self.fc3 = nn.Linear(in_channels, in_channels)
 
-        self.melspec_encoder_3 = nn.TransformerEncoder(
-            nn.TransformerEncoderLayer(d_model=in_channels, nhead=2, batch_first=True), 
-            num_layers=2
-        )
+#         self.melspec_encoder_3 = nn.TransformerEncoder(
+#             nn.TransformerEncoderLayer(d_model=in_channels, nhead=2, batch_first=True), 
+#             num_layers=2
+#         )
 
-        self.fc_out = nn.Linear(in_channels, in_channels)
-        self.prelu = nn.PReLU()
+#         self.fc_out = nn.Linear(in_channels, in_channels)
+#         self.relu = nn.ReLU()
+
+#     def forward(self, x):
+#         """ 
+#         x shape: (batch_size, input_channels, seq_len) 
+#         """
+#         x0 = x 
+
+#         # rearrange to (batch_size, seq_len, input_channels)
+#         x = rearrange(x, 'b c t -> b t c') 
+
+#         y = self.fc1(x)
+#         x = self.relu(y) + x 
+
+#         y = self.melspec_encoder_1(x) # (batch_size, seq_len, in_channels)
+#         x = self.fc2(x)
+#         x = self.relu(y) + x
+
+#         y = self.melspec_encoder_2(x) # (batch_size, seq_len, in_channels)
+#         x = self.fc3(x)
+#         x = self.relu(y) + x
+
+#         y = self.melspec_encoder_3(x) # (batch_size, seq_len, in_channels)
+#         x = self.fc_out(x)
+#         x = self.relu(y) + x
+
+#         x = rearrange(x, 'b t c -> b c t') # rearrange to (batch_size, input_channels, seq_len)
+#         x = self.relu(x) + x0 
+
+#         return x
+
+class Encoder(nn.Module):
+    def __init__(self):
+        super(Encoder, self).__init__()
+        
+        self.conv1 = nn.Conv1d(in_channels=80, out_channels=128, kernel_size=3, stride=1, padding=1)
+        self.conv2 = nn.Conv1d(in_channels=128, out_channels=256, kernel_size=3, stride=1, padding=1)
+        self.conv3 = nn.Conv1d(in_channels=256, out_channels=512, kernel_size=3, stride=1, padding=1)
 
     def forward(self, x):
-        """ 
-        x shape: (batch_size, input_channels, seq_len) 
-        """
-        x0 = x 
-
-        # rearrange to (batch_size, seq_len, input_channels)
-        x = rearrange(x, 'b c t -> b t c') 
-
-        y = self.fc1(x)
-        x = self.prelu(y) + x 
-
-        y = self.melspec_encoder_1(x) # (batch_size, seq_len, in_channels)
-        x = self.fc2(x)
-        x = self.prelu(y) + x
-
-        y = self.melspec_encoder_2(x) # (batch_size, seq_len, in_channels)
-        x = self.fc3(x)
-        x = self.prelu(y) + x
-
-        y = self.melspec_encoder_3(x) # (batch_size, seq_len, in_channels)
-        x = self.fc_out(x)
-        x = self.prelu(y) + x
-
-        x = rearrange(x, 'b t c -> b c t') # rearrange to (batch_size, input_channels, seq_len)
-        x = self.prelu(x) + x0 
+        x = torch.relu(self.conv1(x))
+        x = torch.relu(self.conv2(x))
+        x = torch.relu(self.conv3(x))
 
         return x
 
+class Decoder(nn.Module):
+    def __init__(self):
+        super(Decoder, self).__init__()
+        
+        self.deconv1 = nn.ConvTranspose1d(in_channels=512, out_channels=256, kernel_size=3, stride=1, padding=1)
+        self.deconv2 = nn.ConvTranspose1d(in_channels=256, out_channels=128, kernel_size=3, stride=1, padding=1)
+        self.deconv3 = nn.ConvTranspose1d(in_channels=128, out_channels=80, kernel_size=3, stride=1, padding=1)
+
+    def forward(self, x):
+        x = torch.relu(self.deconv1(x))
+        x = torch.relu(self.deconv2(x))
+        x = torch.relu(self.deconv3(x))
+        return x
+    
+
+class Generator(nn.Module):
+    def __init__(self):
+        super(Generator, self).__init__()
+        self.encoder = Encoder()
+        self.decoder = Decoder()
+        
+    def forward(self, x):
+        x = self.encoder(x)
+        x = self.decoder(x)
+        return x
+        
 
 class MelGenerator(nn.Module):
     def __init__(self, asr_model: nn.Module, spk_model: nn.Module):
