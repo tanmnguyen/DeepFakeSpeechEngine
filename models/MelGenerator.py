@@ -98,8 +98,8 @@ class MelGenerator(nn.Module):
         # train adversarial discriminator
         self.discriminator.zero_grad()
         self.dis_optimizer.zero_grad()
-        loss_d_real = self.discriminator.loss(x, torch.ones(x.shape[0],).to(configs.device))
-        loss_d_fake = self.discriminator.loss(gen_melspec.detach(), torch.zeros(x.shape[0],).to(configs.device))
+        loss_d_real, _ = self.discriminator.loss(x, torch.ones(x.shape[0],).to(configs.device))
+        loss_d_fake, d_out = self.discriminator.loss(gen_melspec.detach(), torch.zeros(x.shape[0],).to(configs.device))
         loss_d = loss_d_real + loss_d_fake
         loss_d.backward()
         self.dis_optimizer.step()
@@ -124,7 +124,7 @@ class MelGenerator(nn.Module):
                 x.contiguous().view(x.shape[0], -1)
             )
 
-        return loss, spk_output, asr_output, mel_mse, loss_spk, loss_asr, loss_d
+        return loss, spk_output, asr_output, mel_mse, loss_spk, loss_asr, d_out
     
     def train_speaker_recognizer(self, x, speaker_labels):
         self.spk_model.train() 
