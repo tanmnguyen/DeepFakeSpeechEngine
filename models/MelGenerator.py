@@ -13,108 +13,39 @@ from torchmetrics import Accuracy
 from .Discriminator import Discriminator
 from utils.batch import process_mel_spectrogram
 
-# class Generator(nn.Module):
-#     def __init__(self, in_channels=80):
-#         super(Generator, self).__init__()
-
-#         self.fc1 = nn.Linear(in_channels, in_channels)
-
-#         self.melspec_encoder_1 = nn.TransformerEncoder(
-#             nn.TransformerEncoderLayer(d_model=in_channels, nhead=2, batch_first=True), 
-#             num_layers=2
-#         )
-#         self.fc2 = nn.Linear(in_channels, in_channels)
-
-#         self.melspec_encoder_2 = nn.TransformerEncoder(
-#             nn.TransformerEncoderLayer(d_model=in_channels, nhead=2, batch_first=True), 
-#             num_layers=2
-#         )
-#         self.fc3 = nn.Linear(in_channels, in_channels)
-
-#         self.melspec_encoder_3 = nn.TransformerEncoder(
-#             nn.TransformerEncoderLayer(d_model=in_channels, nhead=2, batch_first=True), 
-#             num_layers=2
-#         )
-
-#         self.fc_out = nn.Linear(in_channels, in_channels)
-#         self.relu = nn.ReLU()
-
-#     def forward(self, x):
-#         """ 
-#         x shape: (batch_size, input_channels, seq_len) 
-#         """
-#         x0 = x 
-
-#         # rearrange to (batch_size, seq_len, input_channels)
-#         x = rearrange(x, 'b c t -> b t c') 
-
-#         y = self.fc1(x)
-#         x = self.relu(y) + x 
-
-#         y = self.melspec_encoder_1(x) # (batch_size, seq_len, in_channels)
-#         x = self.fc2(x)
-#         x = self.relu(y) + x
-
-#         y = self.melspec_encoder_2(x) # (batch_size, seq_len, in_channels)
-#         x = self.fc3(x)
-#         x = self.relu(y) + x
-
-#         y = self.melspec_encoder_3(x) # (batch_size, seq_len, in_channels)
-#         x = self.fc_out(x)
-#         x = self.relu(y) + x
-
-#         x = rearrange(x, 'b t c -> b c t') # rearrange to (batch_size, input_channels, seq_len)
-#         x = self.relu(x) + x0 
-
-#         return x
-
-
 class Generator(nn.Module):
-    def __init__(self, asr_model):
+    def __init__(self, in_channels=80, out_channels=80, max_length=3000):
         super(Generator, self).__init__()
-        bundle = torchaudio.pipelines.TACOTRON2_WAVERNN_PHONE_LJSPEECH
-        self.processor = bundle.get_text_processor()
-        self.tacotron2 = bundle.get_tacotron2().to(configs.device)
-        self.asr_model = asr_model
-        self.asr_model.require_grad = False
 
-    def forward(self, mel):   
+        # Transformer Encoder
+        encoder_layer = nn.TransformerEncoderLayer(d_model=in_channels, nhead=2)
+        self.melspec_encoder = nn.TransformerEncoder(encoder_layer, num_layers=2)
 
-        # compute text from mel spectrogram
-        with torch.no_grad():
-            processed_mel = process_mel_spectrogram(mel)
-            results = self.asr_model.decode(processed_mel)
+        # Transformer Decoder
+        decoder_layer = nn.TransformerDecoderLayer(d_model=out_channels, nhead=2)
+        self.melspec_decoder = nn.TransformerDecoder(decoder_layer, num_layers=2)
 
-            batch_text, batch_len = [], []
-            for res in results:
-                processed, lengths = self.processor(res.text)
-                batch_text.append(processed.squeeze(0))
-                batch_len.append(lengths)
+        self.linear = nn.Linear(in_channels, out_channels)
+        self.max_length = max_length
 
-            # max len 
-            max_len = max([len(text) for text in batch_text])
-            for i in range(len(batch_text)):
-                batch_text[i] = torch.cat(
-                    [batch_text[i].to(configs.device), torch.zeros(max_len - len(batch_text[i])).long().to(configs.device)]
-                )
+    def forward(self, x):
+        """
+        x shape: (batch_size, input_channels, seq_len)
+        """
+        x = rearrange(x, 'b c t -> b t c')
 
-            # concat to batch dim 
-            batch_text = torch.stack(batch_text, dim=0)
-            batch_len = torch.cat(batch_len, dim=0).to(torch.int)
+        # Transformer Encoder
+        x_encoded = self.melspec_encoder(x)
 
-            # sort by descending order
-            sorted_indices = torch.argsort(batch_len, descending=True)
-            batch_text = batch_text[sorted_indices]
-            batch_len = batch_len[sorted_indices]
+        # Transformer Decoder
+        x_decoded = self.melspec_decoder(tgt=x, memory=x_encoded)
 
-        spec, _, _ = self.tacotron2.infer(batch_text.to(configs.device), batch_len.to(configs.device))
-        
-        # spec has shape (b, c, t)
-        # pad or trim t dim to 3000
-        spec_padded = F.pad(spec, (0, max(0, 3000 - spec.shape[-1])))
-        spec_padded = spec_padded[:, :, :3000]
+        # Linear transformation to output channels
+        output = self.linear(x_decoded)
 
-        return spec_padded
+        output = rearrange(output, 'b t c -> b c t')
+
+        return output
         
 
 class MelGenerator(nn.Module):
@@ -122,7 +53,7 @@ class MelGenerator(nn.Module):
         super(MelGenerator, self).__init__()
         self.asr_model = asr_model 
         self.spk_model = spk_model
-        self.generator = Generator(self.asr_model)
+        self.generator = Generator()
         self.discriminator = Discriminator()
         self.dis_optimizer = optim.Adam(self.discriminator.parameters(), lr=0.0002, betas=(0.5, 0.999))
         self.disc_accuracy_fn = Accuracy(task="binary")
