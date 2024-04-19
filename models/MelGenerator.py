@@ -111,9 +111,7 @@ class MelGenerator(nn.Module):
         loss = loss_asr / loss_spk 
         loss.backward()
 
-        # train adversarial generator 
-        self.gen_optimizer.zero_grad()
-        self.zero_grad() 
+        # train adversarial loss for generator 
         labels = torch.ones(x.shape[0], 1).to(configs.device)
         adv_gen_loss = self.discriminator.loss(gen_melspec, labels)
         adv_gen_loss.backward()
