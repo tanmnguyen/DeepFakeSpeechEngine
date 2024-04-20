@@ -67,6 +67,8 @@ class Generator(nn.Module):
         x = rearrange(x, 'b t c -> b c t') # rearrange to (batch_size, input_channels, seq_len)
         x = self.relu(x + x0) 
 
+        x = self.fc_out(x)
+
         return x
 
 
@@ -94,7 +96,7 @@ class MelGenerator(nn.Module):
 
         return output 
 
-    def train_generator(self, x, tokens, labels, speaker_labels):
+    def train_generator(self, x, tokens, labels, speaker_labels, beta = 0.2):
         self.generator.train() 
         self.asr_model.eval()
         self.spk_model.eval()
@@ -120,7 +122,7 @@ class MelGenerator(nn.Module):
         loss_spk, spk_output = self.spk_model.loss(processed_gen_melspec, speaker_labels)
         loss_asr, asr_output = self.asr_model.loss(processed_gen_melspec, tokens, labels, encoder_no_grad=False)
         adv_gen_loss, _ = self.discriminator.loss(gen_melspec, torch.ones(x.shape[0],).to(configs.device))
-        loss = loss_asr / loss_spk + adv_gen_loss
+        loss = loss_asr / loss_spk * beta + adv_gen_loss * (1 - beta)
 
         # update generator
         loss.backward()
