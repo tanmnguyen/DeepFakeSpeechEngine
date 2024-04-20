@@ -117,7 +117,8 @@ class MelGenerator(nn.Module):
         loss_asr, asr_output = self.asr_model.loss(processed_gen_melspec, tokens, labels, encoder_no_grad=False)
         adv_gen_loss, _ = self.discriminator.loss(gen_melspec, torch.ones(x.shape[0],).to(configs.device))
         
-        loss = loss_asr / loss_spk * beta + adv_gen_loss * (1 - beta)
+        #loss = loss_asr / loss_spk * beta + adv_gen_loss * (1 - beta)
+        loss = adv_gen_loss
 
         # update generator
         loss.backward()
