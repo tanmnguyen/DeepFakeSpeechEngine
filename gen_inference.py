@@ -24,15 +24,15 @@ def compute_fft(audio, threshold=600, constant=1000):
     # Compute the FFT
     fft = np.fft.fft(audio)
     
-    # Compute the absolute values of the FFT
-    fft_abs = np.abs(fft)
+    # # Compute the absolute values of the FFT
+    # fft_abs = np.abs(fft)
     
-    # Check if the values are high and replace them with a constant
-    high_values_indices = np.where(fft_abs > threshold)
-    fft[high_values_indices] = 0
+    # # Check if the values are high and replace them with a constant
+    # high_values_indices = np.where(fft_abs > threshold)
+    # fft[high_values_indices] = 0
 
-    t = int(1e5 + 2e4)
-    fft[t:-t] = 0
+    # t = int(1e5 + 2e4)
+    # fft[t:-t] = 0
     
     return fft
 

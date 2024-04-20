@@ -3,6 +3,7 @@ sys.path.append('../')
 
 import math
 import torch 
+import random
 import configs 
 
 from tqdm import tqdm
@@ -141,7 +142,7 @@ def valid_spk_net(model, valid_dataloader, accuracy, criterion):
         'accuracy': epoch_acc / len(valid_dataloader)
     }
 
-def train_gen_net(model, train_dataloader, accuracy, log_file, train_spk=True, beta=0.2):
+def train_gen_net(model, train_dataloader, accuracy, log_file, train_spk, beta=0.2):
     epoch_loss, epoch_wer, epoch_ser, epoch_spk_acc, \
         epoch_mel_mse, epoch_loss_spk, epoch_loss_asr, epoch_disc_acc = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
     
@@ -156,7 +157,7 @@ def train_gen_net(model, train_dataloader, accuracy, log_file, train_spk=True, b
             melspectrogram_features, tokens, labels, speaker_labels, beta,
         )
 
-        if train_spk:
+        if random.random() <= train_spk:
             loss_spk, _ = model.train_speaker_recognizer(melspectrogram_features, speaker_labels)
 
         with torch.no_grad():
