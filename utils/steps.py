@@ -142,7 +142,7 @@ def valid_spk_net(model, valid_dataloader, accuracy, criterion):
         'accuracy': epoch_acc / len(valid_dataloader)
     }
 
-def train_gen_net(model, train_dataloader, accuracy, log_file, train_spk, beta=0.2):
+def train_gen_net(model, train_dataloader, accuracy, log_file, train_spk, beta):
     epoch_loss, epoch_wer, epoch_ser, epoch_spk_acc, \
         epoch_mel_mse, epoch_loss_spk, epoch_loss_asr, epoch_disc_acc = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
     
