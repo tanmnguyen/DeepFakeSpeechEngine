@@ -148,7 +148,7 @@ def init_gen_net_identity(model, train_dataloader, log_file):
     model.train()
     epoch_loss = 0.0
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, eps=1e-8)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-2, eps=1e-8)
     for i, (melspectrogram_features, tokens, labels, speaker_labels) in enumerate(tqdm(train_dataloader)):
         melspectrogram_features, tokens, labels, speaker_labels = \
             melspectrogram_features.to(configs.device), \
