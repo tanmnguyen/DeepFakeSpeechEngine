@@ -16,38 +16,49 @@ class Generator(nn.Module):
         super(Generator, self).__init__()
         
         # Encoder layers
-        self.encoder = nn.Sequential(
+        self.enc1 = nn.Sequential(
             nn.Conv1d(in_channels, 128, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
-            nn.MaxPool1d(kernel_size=2, stride=2),
+            nn.MaxPool1d(kernel_size=2, stride=2)
+        )
+        self.enc2 = nn.Sequential(
             nn.Conv1d(128, 256, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
-            nn.MaxPool1d(kernel_size=2, stride=2),
+            nn.MaxPool1d(kernel_size=2, stride=2)
+        )
+        self.enc3 = nn.Sequential(
             nn.Conv1d(256, 512, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=2, stride=2)
         )
         
         # Decoder layers
-        self.decoder = nn.Sequential(
+        self.dec1 = nn.Sequential(
             nn.ConvTranspose1d(512, 256, kernel_size=3, stride=2, padding=1, output_padding=1),
-            nn.ReLU(),
+            nn.ReLU()
+        )
+        self.dec2 = nn.Sequential(
             nn.ConvTranspose1d(256, 128, kernel_size=3, stride=2, padding=1, output_padding=1),
-            nn.ReLU(),
+            nn.ReLU()
+        )
+        self.dec3 = nn.Sequential(
             nn.ConvTranspose1d(128, in_channels, kernel_size=3, stride=2, padding=1, output_padding=1),
-            # n.Tanh()  # Tanh activation for audio signal output
+            nn.Tanh()
         )
 
     def forward(self, x):
-        """ 
-        x shape: (batch_size, input_channels, seq_len) 
-        """
         # Encoder
-        encoded = self.encoder(x)
+        enc1_out = self.enc1(x)
+        enc2_out = self.enc2(enc1_out)
+        enc3_out = self.enc3(enc2_out)
         
-        # Decoder
-        decoded = self.decoder(encoded)
-                
+        # Decoder with skip connections
+        dec1_out = self.dec1(enc3_out)
+        dec1_out = dec1_out + enc2_out  # Adding skip connection (using addition, could use concatenation instead)
+        dec2_out = self.dec2(dec1_out)
+        dec2_out = dec2_out + enc1_out  # Adding skip connection
+        decoded = self.dec3(dec2_out)
+        
         return decoded
 
 
