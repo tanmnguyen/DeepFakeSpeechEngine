@@ -120,7 +120,11 @@ class MelGenerator(nn.Module):
         loss_spk, spk_output = self.spk_model.loss(processed_gen_melspec, speaker_labels)
         loss_asr, asr_output = self.asr_model.loss(processed_gen_melspec, tokens, labels, encoder_no_grad=False)
         adv_gen_loss, _ = self.discriminator.loss(gen_melspec, torch.ones(x.shape[0],).to(configs.device))
-        loss = loss_asr / loss_spk * beta + adv_gen_loss * (1 - beta)
+        mel_mse = nn.functional.mse_loss(
+            gen_melspec.contiguous().view(x.shape[0], -1), 
+            x.contiguous().view(x.shape[0], -1)
+        )
+        loss = loss_asr / loss_spk * beta + adv_gen_loss * (1 - beta) + 1 / mel_mse
 
         # update generator
         loss.backward()
@@ -128,12 +132,6 @@ class MelGenerator(nn.Module):
         
         if self.gen_optimizer.param_groups[0]['lr'] >= configs.mel_generator_cfg['min_lr']:
             self.gen_scheduler.step()
-
-        with torch.no_grad():
-            mel_mse = nn.functional.mse_loss(
-                gen_melspec.contiguous().view(x.shape[0], -1), 
-                x.contiguous().view(x.shape[0], -1)
-            )
 
         return loss, spk_output, asr_output, mel_mse, loss_spk, loss_asr, d_acc
     
