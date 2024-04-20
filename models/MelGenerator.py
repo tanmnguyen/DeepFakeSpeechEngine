@@ -18,19 +18,16 @@ class Generator(nn.Module):
         # Encoder layers
         self.enc1 = nn.Sequential(
             nn.Conv1d(in_channels, 128, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm1d(128),
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=2, stride=2)
         )
         self.enc2 = nn.Sequential(
             nn.Conv1d(128, 256, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm1d(256),
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=2, stride=2)
         )
         self.enc3 = nn.Sequential(
             nn.Conv1d(256, 512, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm1d(512),
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=2, stride=2)
         )
@@ -38,20 +35,16 @@ class Generator(nn.Module):
         # Decoder layers
         self.dec1 = nn.Sequential(
             nn.ConvTranspose1d(512, 256, kernel_size=3, stride=2, padding=1, output_padding=1),
-            # nn.BatchNorm1d(256),
             nn.ReLU()
         )
         self.dec2 = nn.Sequential(
             nn.ConvTranspose1d(256, 128, kernel_size=3, stride=2, padding=1, output_padding=1),
-            # nn.BatchNorm1d(128),
             nn.ReLU()
         )
         self.dec3 = nn.Sequential(
             nn.ConvTranspose1d(128, in_channels, kernel_size=3, stride=2, padding=1, output_padding=1),
-            nn.ReLU()
         )
 
-        self.fc_out = nn.Linear(in_channels, in_channels)
 
     def forward(self, x):
         # Encoder
@@ -67,9 +60,7 @@ class Generator(nn.Module):
         dec3_out = self.dec3(dec2_out)
         dec3_out = dec3_out + x  # Adding skip connection
 
-        out = rearrange(dec3_out, 'b c t -> b t c')
-        out = self.fc_out(out)
-        out = rearrange(out, 'b t c -> b c t')
+        out = nn.ReLU()(dec3_out)
 
         return out
 
