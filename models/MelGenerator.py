@@ -63,7 +63,8 @@ class Generator(nn.Module):
         y = self.fc3(x)
         x = self.relu(y + x)
 
-        x = self.fc_out(x)
+        x = self.fc_out(x)  
+        x = self.relu(x) + x0 
 
         x = rearrange(x, 'b t c -> b c t') # rearrange to (batch_size, input_channels, seq_len)
         return x
