@@ -72,7 +72,11 @@ class MelGenerator(nn.Module):
         self.asr_model = asr_model 
         self.spk_model = spk_model
         self.discriminator = Discriminator()
-        self.dis_optimizer = optim.Adam(self.discriminator.parameters(), lr=0.0002, betas=(0.5, 0.999))
+        self.dis_optimizer = optim.Adam(
+            self.discriminator.parameters(), 
+            lr=configs.mel_generator_cfg['learning_rate'], 
+            betas=(0.5, 0.999)
+        )
         self.disc_accuracy_fn = Accuracy(task="binary")
 
     def set_gen_optimizer(self, gen_optimizer, gen_scheduler):
@@ -115,7 +119,7 @@ class MelGenerator(nn.Module):
         loss_spk, spk_output = self.spk_model.loss(processed_gen_melspec, speaker_labels)
         loss_asr, asr_output = self.asr_model.loss(processed_gen_melspec, tokens, labels, encoder_no_grad=False)
         adv_gen_loss, _ = self.discriminator.loss(gen_melspec, torch.ones(x.shape[0],).to(configs.device))
-        loss = (loss_asr / loss_spk) * beta + adv_gen_loss
+        loss = loss_asr + 1.0 / loss_spk * beta + adv_gen_loss
 
         # update generator
         loss.backward()
