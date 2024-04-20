@@ -5,8 +5,10 @@ import torch
 import librosa
 import configs 
 import argparse
+import numpy as np
 import soundfile as sf
 import torch.optim as optim
+import matplotlib.pyplot as plt
 
 from utils.io import log
 from utils.networks import load_asr
@@ -17,6 +19,22 @@ from utils.batch import spectrogram_generation_collate_fn
 from datasets.SpectrogramGenerationDataset import SpectrogramGenerationDataset
 
 from models.MelGenerator import MelGenerator
+
+def compute_fft(audio, threshold=600, constant=1000):
+    # Compute the FFT
+    fft = np.fft.fft(audio)
+    
+    # Compute the absolute values of the FFT
+    fft_abs = np.abs(fft)
+    
+    # Check if the values are high and replace them with a constant
+    high_values_indices = np.where(fft_abs > threshold)
+    fft[high_values_indices] = 0
+
+    t = int(1e5 + 2e4)
+    fft[t:-t] = 0
+    
+    return fft
 
 
 torch.manual_seed(3001)
@@ -51,7 +69,7 @@ def main(args):
     
     gen_model = load_state_dict(gen_model, args.weight)
     gen_model.eval()
-    index = 1
+    index = 0
     for i, (melspectrogram_features, tokens, labels, speaker_labels) in enumerate(train_dataloader):
         melspectrogram_features, tokens, labels, speaker_labels = \
             melspectrogram_features.to(configs.device), \
@@ -61,14 +79,41 @@ def main(args):
         
         output = gen_model(melspectrogram_features)
 
+
+        gen_melspec = output[index].squeeze(0).detach().numpy()
+        ori_melspec = melspectrogram_features[index].squeeze(0).detach().numpy()
+
+        # save_melspec_comparison_plot(gen_melspec, ori_melspec, 'melspec_comparison.png')
+        # return 
+        # output = gen_model(melspectrogram_features)
+
         inv_audio = librosa.feature.inverse.mel_to_audio(
-            output[index].detach().numpy(), sr=16000, n_fft=400, hop_length=160, window="hann"
+            gen_melspec, sr=16000, n_fft=400, hop_length=160, window="hann"
         )
+
         ori_audio = librosa.feature.inverse.mel_to_audio(
-            melspectrogram_features[index].detach().numpy(), sr=16000, n_fft=400, hop_length=160, window="hann"
+            ori_melspec, sr=16000, n_fft=400, hop_length=160, window="hann"
         ) 
+        fft_inv = compute_fft(inv_audio)
+        fft_ori = np.fft.fft(ori_audio)
+
+        plt.figure(figsize=(10, 6))
+        plt.plot(np.abs(fft_inv), label="inverted audio") 
+        plt.plot(np.abs(fft_ori), label="original audio")
+        plt.title('FFT Result from Audio Files')
+        plt.xlabel('Frequency (bin)')
+        plt.ylabel('Magnitude')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+
+        # invert fft 
+        inv_audio = np.fft.ifft(fft_inv).real
+        ori_audio = np.fft.ifft(fft_ori).real
+
         sf.write("inverted.wav", inv_audio, 16000)
         sf.write("original.wav", ori_audio, 16000)
+        return
 
         processed_mel = process_mel_spectrogram(output[index].unsqueeze(0))
         # decode with asr model 

@@ -7,3 +7,4 @@ h5py
 torchmetrics
 einops
 deep_phonemizer
+matplotlib

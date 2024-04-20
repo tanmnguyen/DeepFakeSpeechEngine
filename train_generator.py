@@ -91,7 +91,7 @@ def main(args):
     accuracy = Accuracy(task="multiclass", num_classes=dataset.num_classes).to(configs.device)
 
     for epoch in range(configs.mel_generator_cfg['epochs']):
-        train_history = train_gen_net(gen_model, train_dataloader, accuracy, log_file, train_spk=True if epoch == 1 else False)
+        train_history = train_gen_net(gen_model, train_dataloader, accuracy, log_file, train_spk=True if epoch < 1 else False)
         log(
             f"[Train] Epoch: {epoch+1}/{configs.mel_generator_cfg['epochs']} - " +
             f"Loss: {train_history['loss']} | " +
