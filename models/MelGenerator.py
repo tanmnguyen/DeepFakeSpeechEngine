@@ -14,55 +14,58 @@ from utils.batch import process_mel_spectrogram
 class Generator(nn.Module):
     def __init__(self, in_channels=80):
         super(Generator, self).__init__()
-        
-        # Encoder layers
-        self.enc1 = nn.Sequential(
-            nn.Conv1d(in_channels, 128, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.MaxPool1d(kernel_size=2, stride=2)
-        )
-        self.enc2 = nn.Sequential(
-            nn.Conv1d(128, 256, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.MaxPool1d(kernel_size=2, stride=2)
-        )
-        self.enc3 = nn.Sequential(
-            nn.Conv1d(256, 512, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.MaxPool1d(kernel_size=2, stride=2)
-        )
-        
-        # Decoder layers
-        self.dec1 = nn.Sequential(
-            nn.ConvTranspose1d(512, 256, kernel_size=3, stride=2, padding=1, output_padding=1),
-            nn.ReLU()
-        )
-        self.dec2 = nn.Sequential(
-            nn.ConvTranspose1d(256, 128, kernel_size=3, stride=2, padding=1, output_padding=1),
-            nn.ReLU()
-        )
-        self.dec3 = nn.Sequential(
-            nn.ConvTranspose1d(128, in_channels, kernel_size=3, stride=2, padding=1, output_padding=1),
-        )
 
+        self.fc = nn.Linear(in_channels, in_channels)
+        self.relu = nn.ReLU() 
+
+        self.melspec_encoder_1 = nn.TransformerEncoder(
+            nn.TransformerEncoderLayer(d_model=in_channels, nhead=2, batch_first=True), 
+            num_layers=2
+        )
+        self.fc1 = nn.Linear(in_channels, in_channels)
+
+        self.melspec_encoder_2 = nn.TransformerEncoder(
+            nn.TransformerEncoderLayer(d_model=in_channels, nhead=2, batch_first=True), 
+            num_layers=2
+        )
+        self.fc2 = nn.Linear(in_channels, in_channels)
+
+        self.melspec_encoder_3 = nn.TransformerEncoder(
+            nn.TransformerEncoderLayer(d_model=in_channels, nhead=2, batch_first=True), 
+            num_layers=2
+        )
+        self.fc3 = nn.Linear(in_channels, in_channels)
+
+        self.fc_out = nn.Linear(in_channels, in_channels)
 
     def forward(self, x):
-        # Encoder
-        enc1_out = self.enc1(x)
-        enc2_out = self.enc2(enc1_out)
-        enc3_out = self.enc3(enc2_out)
-        
-        # Decoder with skip connections
-        dec1_out = self.dec1(enc3_out)
-        dec1_out = dec1_out + enc2_out  # Adding skip connection (using addition, could use concatenation instead)
-        dec2_out = self.dec2(dec1_out)
-        dec2_out = dec2_out + enc1_out  # Adding skip connection
-        dec3_out = self.dec3(dec2_out)
-        dec3_out = dec3_out + x  # Adding skip connection
+        """ 
+        x shape: (batch_size, input_channels, seq_len) 
+        """
+        # rearrange to (batch_size, seq_len, input_channels)
+        x = rearrange(x, 'b c t -> b t c') 
+        x0 = x
 
-        out = nn.ReLU()(dec3_out)
+        y = self.fc(x)
+        x = self.relu(y) + x 
 
-        return out
+        y = self.melspec_encoder_1(x) # (batch_size, seq_len, in_channels)
+        y = self.fc1(x)
+        x = self.relu(y + x)
+
+        y = self.melspec_encoder_2(x) # (batch_size, seq_len, in_channels)
+        y = self.fc2(x)
+        x = self.relu(y + x) 
+
+        y = self.melspec_encoder_3(x) # (batch_size, seq_len, in_channels)
+        y = self.fc3(x)
+        x = self.relu(y + x)
+
+        x = self.fc_out(x)  
+        x = self.relu(x) + x0 
+
+        x = rearrange(x, 'b t c -> b c t') # rearrange to (batch_size, input_channels, seq_len)
+        return x
 
 
 class MelGenerator(nn.Module):

@@ -90,9 +90,6 @@ def main(args):
     accuracy = Accuracy(task="multiclass", num_classes=dataset.num_classes).to(configs.device)
 
     # initialize the network optimal solution first by learning the identity function
-    for _ in range(3):
-        init_gen_net_identity(gen_model.generator, train_dataloader, log_file)
-
     for epoch in range(configs.mel_generator_cfg['epochs']):
         train_history = train_gen_net(
             gen_model, 
