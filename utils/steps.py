@@ -5,6 +5,7 @@ import math
 import torch 
 import random
 import configs 
+import torch.nn as nn 
 
 from tqdm import tqdm
 from utils.io import log
@@ -141,6 +142,36 @@ def valid_spk_net(model, valid_dataloader, accuracy, criterion):
         'loss': epoch_loss / len(valid_dataloader),
         'accuracy': epoch_acc / len(valid_dataloader)
     }
+
+
+def init_gen_net_identity(model, train_dataloader, log_file):
+    model.train()
+    epoch_loss = 0.0
+
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, eps=1e-8)
+    for i, (melspectrogram_features, tokens, labels, speaker_labels) in enumerate(tqdm(train_dataloader)):
+        melspectrogram_features, tokens, labels, speaker_labels = \
+            melspectrogram_features.to(configs.device), \
+            tokens.to(configs.device), \
+            labels.to(configs.device), \
+            speaker_labels.to(configs.device)
+
+        model.zero_grad()
+        gen_melspec = model(melspectrogram_features)
+        loss = nn.functional.mse_loss(
+            gen_melspec.contiguous().view(tokens.shape[0], -1), 
+            melspectrogram_features.contiguous().view(tokens.shape[0], -1)
+        )
+        loss.backward()
+        optimizer.step()
+
+        with torch.no_grad():
+            epoch_loss += loss.item()
+
+        if i % 100 == 0:
+            log(f"[Init Identity] Loss: {epoch_loss / (i + 1)} | LR: {optimizer.param_groups[0]['lr']}", log_file)
+
+        torch.cuda.empty_cache()
 
 def train_gen_net(model, train_dataloader, accuracy, log_file, train_spk, beta):
     epoch_loss, epoch_wer, epoch_ser, epoch_spk_acc, \

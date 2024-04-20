@@ -90,7 +90,7 @@ class MelGenerator(nn.Module):
 
         return output 
 
-    def train_generator(self, x, tokens, labels, speaker_labels, beta = 0.2):
+    def train_generator(self, x, tokens, labels, speaker_labels, beta):
         self.generator.train() 
         self.asr_model.eval()
         self.spk_model.eval()

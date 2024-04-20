@@ -10,8 +10,8 @@ from utils.io import log
 from torchmetrics import Accuracy
 from torch.utils.data import DataLoader
 from utils.networks import load_asr, load_spk
-from utils.steps import train_gen_net, valid_gen_net
 from utils.batch import spectrogram_generation_collate_fn
+from utils.steps import train_gen_net, valid_gen_net, init_gen_net_identity
 from datasets.SpectrogramGenerationDataset import SpectrogramGenerationDataset
 
 from models.MelGenerator import MelGenerator
@@ -68,7 +68,6 @@ def main(args):
 
     gen_model.set_gen_optimizer(gen_optimizer, gen_scheduler)
 
-
     spk_optimizer = optim.Adam(spk_model.parameters(), 
         lr=configs.speaker_recognition_cfg['learning_rate'], 
         eps=1e-8
@@ -90,13 +89,17 @@ def main(args):
 
     accuracy = Accuracy(task="multiclass", num_classes=dataset.num_classes).to(configs.device)
 
+    # initialize the network optimal solution first by learning the identity function
+    for _ in range(5):
+        init_gen_net_identity(gen_model.generator, train_dataloader, log_file)
+
     for epoch in range(configs.mel_generator_cfg['epochs']):
         train_history = train_gen_net(
             gen_model, 
             train_dataloader, 
             accuracy, 
             log_file, 
-            train_spk=1, 
+            train_spk=1 if epoch < 2 else 0.3, 
             beta=0.2
         )
         log(
