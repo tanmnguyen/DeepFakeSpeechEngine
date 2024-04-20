@@ -14,60 +14,41 @@ from utils.batch import process_mel_spectrogram
 class Generator(nn.Module):
     def __init__(self, in_channels=80):
         super(Generator, self).__init__()
-
-        self.fc = nn.Linear(in_channels, in_channels)
-        self.relu = nn.ReLU() 
-
-        self.melspec_encoder_1 = nn.TransformerEncoder(
-            nn.TransformerEncoderLayer(d_model=in_channels, nhead=2, batch_first=True), 
-            num_layers=2
+        
+        # Encoder layers
+        self.encoder = nn.Sequential(
+            nn.Conv1d(in_channels, 128, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=2, stride=2),
+            nn.Conv1d(128, 256, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=2, stride=2),
+            nn.Conv1d(256, 512, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=2, stride=2)
         )
-        self.fc1 = nn.Linear(in_channels, in_channels)
-
-        self.melspec_encoder_2 = nn.TransformerEncoder(
-            nn.TransformerEncoderLayer(d_model=in_channels, nhead=2, batch_first=True), 
-            num_layers=2
+        
+        # Decoder layers
+        self.decoder = nn.Sequential(
+            nn.ConvTranspose1d(512, 256, kernel_size=3, stride=2, padding=1, output_padding=1),
+            nn.ReLU(),
+            nn.ConvTranspose1d(256, 128, kernel_size=3, stride=2, padding=1, output_padding=1),
+            nn.ReLU(),
+            nn.ConvTranspose1d(128, in_channels, kernel_size=3, stride=2, padding=1, output_padding=1),
+            # n.Tanh()  # Tanh activation for audio signal output
         )
-        self.fc2 = nn.Linear(in_channels, in_channels)
-
-        self.melspec_encoder_3 = nn.TransformerEncoder(
-            nn.TransformerEncoderLayer(d_model=in_channels, nhead=2, batch_first=True), 
-            num_layers=2
-        )
-        self.fc3 = nn.Linear(in_channels, in_channels)
-
-        self.fc_out = nn.Linear(in_channels, in_channels)
-
-
 
     def forward(self, x):
         """ 
         x shape: (batch_size, input_channels, seq_len) 
         """
-        # rearrange to (batch_size, seq_len, input_channels)
-        x = rearrange(x, 'b c t -> b t c') 
-        x0 = x
-
-        y = self.fc(x)
-        x = self.relu(y) + x 
-
-        y = self.melspec_encoder_1(x) # (batch_size, seq_len, in_channels)
-        y = self.fc1(x)
-        x = self.relu(y + x)
-
-        y = self.melspec_encoder_2(x) # (batch_size, seq_len, in_channels)
-        y = self.fc2(x)
-        x = self.relu(y + x) 
-
-        y = self.melspec_encoder_3(x) # (batch_size, seq_len, in_channels)
-        y = self.fc3(x)
-        x = self.relu(y + x)
-
-        x = self.fc_out(x)  
-        x = self.relu(x) + x0 
-
-        x = rearrange(x, 'b t c -> b c t') # rearrange to (batch_size, input_channels, seq_len)
-        return x
+        # Encoder
+        encoded = self.encoder(x)
+        
+        # Decoder
+        decoded = self.decoder(encoded)
+                
+        return decoded
 
 
 class MelGenerator(nn.Module):
@@ -135,7 +116,7 @@ class MelGenerator(nn.Module):
                 gen_melspec.contiguous().view(x.shape[0], -1), 
                 x.contiguous().view(x.shape[0], -1)
             )
-            
+
         return loss, spk_output, asr_output, mel_mse, loss_spk, loss_asr, d_acc
     
     def train_speaker_recognizer(self, x, speaker_labels):
