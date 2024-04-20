@@ -96,7 +96,7 @@ def main(args):
             train_dataloader, 
             accuracy, 
             log_file, 
-            train_spk=1 if epoch < 1 else 0.1, 
+            train_spk=1 if epoch < 1 else 0.5, 
             beta=0.2
         )
         log(
