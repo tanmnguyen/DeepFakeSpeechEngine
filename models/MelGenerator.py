@@ -44,10 +44,9 @@ class Generator(nn.Module):
         """ 
         x shape: (batch_size, input_channels, seq_len) 
         """
-        x0 = x 
-
         # rearrange to (batch_size, seq_len, input_channels)
         x = rearrange(x, 'b c t -> b t c') 
+        x0 = x
 
         y = self.fc(x)
         x = self.relu(y) + x 
@@ -57,18 +56,16 @@ class Generator(nn.Module):
         x = self.relu(y + x)
 
         y = self.melspec_encoder_2(x) # (batch_size, seq_len, in_channels)
-        y = self.fc1(x)
+        y = self.fc2(x)
         x = self.relu(y + x) 
 
         y = self.melspec_encoder_3(x) # (batch_size, seq_len, in_channels)
-        y = self.fc1(x)
+        y = self.fc3(x)
         x = self.relu(y + x)
-
-        x = rearrange(x, 'b t c -> b c t') # rearrange to (batch_size, input_channels, seq_len)
-        x = self.relu(x + x0) 
 
         x = self.fc_out(x)
 
+        x = rearrange(x, 'b t c -> b c t') # rearrange to (batch_size, input_channels, seq_len)
         return x
 
 
