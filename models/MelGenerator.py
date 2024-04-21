@@ -106,14 +106,14 @@ class MelGenerator(nn.Module):
 
         # speaker recognition --------------------------------
         self.spk_optimizer = optim.Adam(self.spk_model.parameters(), 
-            lr=configs.speaker_recognition_cfg['learning_rate'], 
+            lr=configs.mel_generator_cfg['learning_rate'], 
             eps=1e-8
         )
 
         self.spk_scheduler = torch.optim.lr_scheduler.StepLR(
             self.spk_optimizer, 
             step_size=step_size, 
-            gamma=configs.speaker_recognition_cfg['scheduler_gamma']
+            gamma=configs.mel_generator_cfg['scheduler_gamma']
         )
 
     def forward(self, x):
@@ -148,7 +148,7 @@ class MelGenerator(nn.Module):
         loss_spk, spk_output = self.spk_model.loss(processed_gen_melspec, speaker_labels)
         loss_asr, asr_output = self.asr_model.loss(processed_gen_melspec, tokens, labels, encoder_no_grad=False)
         adv_gen_loss, _ = self.discriminator.loss(gen_melspec, torch.ones(x.shape[0],).to(configs.device))
-        loss = (loss_asr + 1.0 / loss_spk) * beta + adv_gen_loss
+        loss = loss_asr + (1.0 / loss_spk) * beta + adv_gen_loss
 
         # update generator
         loss.backward()
@@ -180,7 +180,7 @@ class MelGenerator(nn.Module):
         self.spk_optimizer.step()
 
         # update scheduler 
-        if self.spk_optimizer.param_groups[0]['lr'] >= configs.speaker_recognition_cfg['min_lr']:
+        if self.spk_optimizer.param_groups[0]['lr'] >= configs.mel_generator_cfg['min_lr']:
             self.spk_scheduler.step()
 
         return loss_spk, spk_output
