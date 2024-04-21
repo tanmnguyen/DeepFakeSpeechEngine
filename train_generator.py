@@ -52,35 +52,10 @@ def main(args):
     
     gen_model = MelGenerator(
         asr_model=asr_model, 
-        spk_model=spk_model
+        spk_model=spk_model,
+        step_size = len(train_dataloader) * 2,
     ).to(configs.device)
 
-    gen_optimizer = optim.Adam(gen_model.generator.parameters(), 
-        lr=configs.mel_generator_cfg['learning_rate'], 
-        eps=1e-8
-    )
-
-    gen_scheduler = torch.optim.lr_scheduler.StepLR(
-        gen_optimizer, 
-        step_size=len(train_dataloader) * 2, 
-        gamma=configs.mel_generator_cfg['scheduler_gamma']
-    )
-
-    gen_model.set_gen_optimizer(gen_optimizer, gen_scheduler)
-
-    spk_optimizer = optim.Adam(spk_model.parameters(), 
-        lr=configs.speaker_recognition_cfg['learning_rate'], 
-        eps=1e-8
-    )
-
-    spk_scheduler = torch.optim.lr_scheduler.StepLR(
-        spk_optimizer, 
-        step_size=len(train_dataloader) * 3, 
-        gamma=configs.speaker_recognition_cfg['scheduler_gamma']
-    )
-
-    gen_model.set_spk_optimizer(spk_optimizer, spk_scheduler)
-    
     log(gen_model, log_file)
     log(f"Device: {configs.device}", log_file)
     log(f"Train set size: {len(train_dataset)}", log_file)
@@ -96,8 +71,8 @@ def main(args):
             train_dataloader, 
             accuracy, 
             log_file, 
-            train_spk=1 if epoch < 2 else 0.5, 
-            beta=1, # supression term for inverse speaker loss
+            train_spk=1 if epoch < 2 else 0.2, 
+            beta=0.2 if epoch < 2 else 1, # supression term for inverse speaker loss
         )
         log(
             f"[Train] Epoch: {epoch+1}/{configs.mel_generator_cfg['epochs']} - " +

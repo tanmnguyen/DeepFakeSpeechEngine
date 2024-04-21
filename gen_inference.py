@@ -97,6 +97,13 @@ def main(args):
         fft_inv = compute_fft(inv_audio)
         fft_ori = np.fft.fft(ori_audio)
 
+        # invert fft 
+        inv_audio = np.fft.ifft(fft_inv).real
+        ori_audio = np.fft.ifft(fft_ori).real
+
+        sf.write("inverted.wav", inv_audio, 16000)
+        sf.write("original.wav", ori_audio, 16000)
+
         plt.figure(figsize=(10, 6))
         plt.plot(np.abs(fft_inv), label="inverted audio") 
         plt.plot(np.abs(fft_ori), label="original audio")
@@ -107,12 +114,6 @@ def main(args):
         plt.grid(True)
         plt.show()
 
-        # invert fft 
-        inv_audio = np.fft.ifft(fft_inv).real
-        ori_audio = np.fft.ifft(fft_ori).real
-
-        sf.write("inverted.wav", inv_audio, 16000)
-        sf.write("original.wav", ori_audio, 16000)
         return
 
         processed_mel = process_mel_spectrogram(output[index].unsqueeze(0))

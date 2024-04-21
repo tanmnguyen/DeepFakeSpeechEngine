@@ -69,26 +69,52 @@ class Generator(nn.Module):
 
 
 class MelGenerator(nn.Module):
-    def __init__(self, asr_model: nn.Module, spk_model: nn.Module):
+    def __init__(self, asr_model: nn.Module, spk_model: nn.Module, step_size: int):
         super(MelGenerator, self).__init__()
         self.generator = Generator()
         self.asr_model = asr_model 
         self.spk_model = spk_model
         self.discriminator = Discriminator()
+
+        self.set_training_config(step_size) 
+
+    def set_training_config(self, step_size):
+        # discriminator --------------------------------
         self.dis_optimizer = optim.Adam(
             self.discriminator.parameters(), 
             lr=configs.mel_generator_cfg['learning_rate'], 
             betas=(0.5, 0.999)
         )
+        self.dis_scheduler = torch.optim.lr_scheduler.StepLR(
+            self.dis_optimizer, 
+            step_size=step_size, 
+            gamma=configs.mel_generator_cfg['scheduler_gamma']
+        )
         self.disc_accuracy_fn = Accuracy(task="binary")
 
-    def set_gen_optimizer(self, gen_optimizer, gen_scheduler):
-        self.gen_optimizer = gen_optimizer
-        self.gen_scheduler = gen_scheduler
+        # generator --------------------------------
+        self.gen_optimizer = optim.Adam(self.generator.parameters(), 
+            lr=configs.mel_generator_cfg['learning_rate'], 
+            eps=1e-8
+        )
 
-    def set_spk_optimizer(self, spk_optimizer, spk_scheduler):
-        self.spk_optimizer = spk_optimizer
-        self.spk_scheduler = spk_scheduler
+        self.gen_scheduler = torch.optim.lr_scheduler.StepLR(
+            self.gen_optimizer, 
+            step_size=step_size, 
+            gamma=configs.mel_generator_cfg['scheduler_gamma']
+        )
+
+        # speaker recognition --------------------------------
+        self.spk_optimizer = optim.Adam(self.spk_model.parameters(), 
+            lr=configs.speaker_recognition_cfg['learning_rate'], 
+            eps=1e-8
+        )
+
+        self.spk_scheduler = torch.optim.lr_scheduler.StepLR(
+            self.spk_optimizer, 
+            step_size=step_size, 
+            gamma=configs.speaker_recognition_cfg['scheduler_gamma']
+        )
 
     def forward(self, x):
         # generate the output
@@ -122,7 +148,7 @@ class MelGenerator(nn.Module):
         loss_spk, spk_output = self.spk_model.loss(processed_gen_melspec, speaker_labels)
         loss_asr, asr_output = self.asr_model.loss(processed_gen_melspec, tokens, labels, encoder_no_grad=False)
         adv_gen_loss, _ = self.discriminator.loss(gen_melspec, torch.ones(x.shape[0],).to(configs.device))
-        loss = loss_asr + 1.0 / loss_spk * beta + adv_gen_loss
+        loss = (loss_asr + 1.0 / loss_spk) * beta + adv_gen_loss
 
         # update generator
         loss.backward()
@@ -130,6 +156,7 @@ class MelGenerator(nn.Module):
         
         if self.gen_optimizer.param_groups[0]['lr'] >= configs.mel_generator_cfg['min_lr']:
             self.gen_scheduler.step()
+            self.dis_scheduler.step()
 
         with torch.no_grad():
             mel_mse = nn.functional.mse_loss(
