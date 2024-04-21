@@ -6,7 +6,7 @@ import torch.nn as nn
 from einops import rearrange
 
 class Discriminator(nn.Module):
-    def __init__(self, feat_dim=80, hidden_dim=16):
+    def __init__(self, feat_dim=80, hidden_dim=8):
         super(Discriminator, self).__init__()
         self.fc1 = nn.Linear(feat_dim, hidden_dim)
         self.fc_out= nn.Linear(hidden_dim, 1)

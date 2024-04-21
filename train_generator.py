@@ -71,8 +71,8 @@ def main(args):
             train_dataloader, 
             accuracy, 
             log_file, 
-            train_spk=1 if epoch < 1 else 0.2, 
-            beta=(0.2, 0.2, 1) if epoch < 1 else (0.8, 2, 1), # supression term for inverse speaker loss
+            train_spk=0.6 if epoch < 1 else 0.1, 
+            beta=(0.2, 5, 20) if epoch < 1 else (0.8, 5, 20), # supression term for inverse speaker loss
         )
         log(
             f"[Train] Epoch: {epoch+1}/{configs.mel_generator_cfg['epochs']} - " +
