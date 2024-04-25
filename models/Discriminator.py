@@ -20,8 +20,8 @@ class Discriminator(nn.Module):
         
         # compute embeddings
         x = self.fc1(x)
-        x = self.relu1(x)
-        x = self.fc2(x)
+        # x = self.relu1(x)
+        # x = self.fc2(x)
         # compute the average along the feature dimension
         x = x.mean(dim=1)
         # prediction 
