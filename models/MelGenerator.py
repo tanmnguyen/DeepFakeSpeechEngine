@@ -41,9 +41,6 @@ class MelShiftNetwork(nn.Module):
         """ 
         x shape: (batch_size, input_channels, seq_len) 
         """
-        # rearrange to (batch_size, seq_len, input_channels)
-        x = rearrange(x, 'b c t -> b t c') 
-
         y = self.fc(x)
         x = self.relu(y) + x 
 
