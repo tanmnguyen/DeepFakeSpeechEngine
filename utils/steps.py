@@ -257,14 +257,14 @@ def valid_gen_net(model, valid_dataloader, accuracy, log_file, beta):
 
         torch.cuda.empty_cache()
 
-    log(f"[Valid] Loss: {epoch_loss / valid_dataloader:.4f} " + \
-        f"| WER: {epoch_wer / valid_dataloader:.4f} " + \
-        f"| SER: {epoch_ser / valid_dataloader:.4f} " + \
-        f"| Speaker Accuracy: {epoch_spk_acc / valid_dataloader:.4f} " + \
-        f"| Mel MSE: {epoch_mel_mse / valid_dataloader:.4f}" + \
-        f"| SPK Loss: {epoch_loss_spk / valid_dataloader:.4f}" + \
-        f"| ASR Loss: {epoch_loss_asr / valid_dataloader:.4}" + \
-        f"| Disc Avg Acc: {epoch_disc_acc / valid_dataloader:.4}" + \
+    log(f"[Valid] Loss: {epoch_loss / len(valid_dataloader):.4f} " + \
+        f"| WER: {epoch_wer / len(valid_dataloader):.4f} " + \
+        f"| SER: {epoch_ser / len(valid_dataloader):.4f} " + \
+        f"| Speaker Accuracy: {epoch_spk_acc / len(valid_dataloader):.4f} " + \
+        f"| Mel MSE: {epoch_mel_mse / len(valid_dataloader):.4f}" + \
+        f"| SPK Loss: {epoch_loss_spk / len(valid_dataloader):.4f}" + \
+        f"| ASR Loss: {epoch_loss_asr / len(valid_dataloader):.4}" + \
+        f"| Disc Avg Acc: {epoch_disc_acc / len(valid_dataloader):.4}" + \
         f"| LR: {model.gen_optimizer.param_groups[0]['lr']:.4f}", log_file)
 
     return {
