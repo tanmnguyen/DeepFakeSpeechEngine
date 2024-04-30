@@ -41,7 +41,7 @@ def get_json(json_path, start_index, num_keys, shuffle=False):
 
 speaker_recognition_cfg = {
     'batch_size': 16,
-    'epochs': 30,
+    'epochs': 15,
     'learning_rate': 1e-3,
     'min_lr': 1e-7,
     'scheduler_gamma': 0.9,
@@ -56,7 +56,7 @@ speaker_recognition_cfg = {
 
 mel_generator_cfg = {
     'batch_size': 4,
-    'epochs': 12,
+    'epochs': 15,
     'learning_rate': 2e-4,
     'min_lr': 7e-6,
     'scheduler_gamma': 0.7,
