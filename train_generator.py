@@ -85,7 +85,7 @@ def main(args):
             accuracy, 
             log_file, 
             train_spk=1 if epoch < 1 else 0.005, 
-            beta=(0.2, 0.2, 20) if epoch < 1 else (8, 5, 1),
+            beta=(0.2, 0.2, 20) if epoch < 1 else (7, 5, 1),
         )
         log(
             f"[Train] Epoch: {epoch+1}/{configs.mel_generator_cfg['epochs']} - " +
