@@ -35,7 +35,7 @@ def get_json(json_path, start_index, num_keys, shuffle=False):
         keys = np.random.permutation(keys)
     # build new json data 
     keys = keys[start_index:start_index+num_keys]
-    new_data = {key: data[key] for key in keys}
+    new_data = {key: idx for idx, key in enumerate(keys)}
 
     return new_data
 
