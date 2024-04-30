@@ -19,7 +19,6 @@ def assert_loss(loss_val):
         raise ValueError(f'Loss value is {loss_val}')
 
 def train_asr_net(model, train_dataloader, scheduler, optimizer, log_file):
-
     model.train()
 
     epoch_loss, epoch_wer, epoch_ser = 0.0, 0.0, 0.0
@@ -143,35 +142,6 @@ def valid_spk_net(model, valid_dataloader, accuracy, criterion):
         'accuracy': epoch_acc / len(valid_dataloader)
     }
 
-
-def init_gen_net_identity(model, train_dataloader, log_file):
-    model.train()
-    epoch_loss = 0.0
-
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-2, eps=1e-8)
-    for i, (melspectrogram_features, tokens, labels, speaker_labels) in enumerate(tqdm(train_dataloader)):
-        melspectrogram_features, tokens, labels, speaker_labels = \
-            melspectrogram_features.to(configs.device), \
-            tokens.to(configs.device), \
-            labels.to(configs.device), \
-            speaker_labels.to(configs.device)
-
-        model.zero_grad()
-        gen_melspec = model(melspectrogram_features)
-        loss = nn.functional.mse_loss(
-            gen_melspec.contiguous().view(tokens.shape[0], -1), 
-            melspectrogram_features.contiguous().view(tokens.shape[0], -1)
-        )
-        loss.backward()
-        optimizer.step()
-
-        with torch.no_grad():
-            epoch_loss += loss.item()
-
-        if i % 100 == 0:
-            log(f"[Init Identity] Loss: {epoch_loss / (i + 1)} | LR: {optimizer.param_groups[0]['lr']}", log_file)
-
-        torch.cuda.empty_cache()
 
 def train_gen_net(model, train_dataloader, accuracy, log_file, train_spk, beta):
     epoch_loss, epoch_wer, epoch_ser, epoch_spk_acc, \
