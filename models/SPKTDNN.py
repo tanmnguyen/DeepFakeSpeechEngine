@@ -17,7 +17,7 @@ class SPKTDNN(nn.Module):
         )
 
         self.dropout = nn.Dropout(0.1)
-        self.fc = nn.Linear(g, num_classes)
+        self.fc = nn.Linear(embed_dim, num_classes)
 
     def forward(self, mel):
         x = rearrange(mel, 'b t c -> b c t')
