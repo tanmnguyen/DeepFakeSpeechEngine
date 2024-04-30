@@ -25,7 +25,7 @@ speech_recognition_cfg = {
     "result_dir": "results/asr"
 }
 
-def get_json(json_path, num_keys, shuffle=False):
+def get_json(json_path, start_index, num_keys, shuffle=False):
     with open(json_path, 'r') as f:
         data = json.load(f)
     # get the first num_keys keys
@@ -34,7 +34,7 @@ def get_json(json_path, num_keys, shuffle=False):
     if shuffle:
         keys = np.random.permutation(keys)
     # build new json data 
-    keys = keys[:num_keys]
+    keys = keys[start_index:start_index+num_keys]
     new_data = {key: data[key] for key in keys}
 
     return new_data
@@ -49,7 +49,7 @@ speaker_recognition_cfg = {
     "speaker_ids": "train/utt2spk",
     "train_option": {
         "option": "spk2spk",  # first train option speaker to speaker
-        "spk2idx": get_json("json/tedlium_train_spks.json", 50, shuffle=False)
+        "spk2idx": get_json("json/tedlium_train_spks.json", start_index=0, num_keys=50, shuffle=False)
     }, 
 }
 

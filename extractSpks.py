@@ -1,6 +1,6 @@
 import json 
 
-filepath = "egs/tedlium/data/train/spk2utt"
+filepath = "egs/tedlium/data/dev/spk2utt"
 
 spks = dict() 
 with open(filepath, "r") as file:

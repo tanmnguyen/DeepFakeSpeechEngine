@@ -34,7 +34,7 @@ CUDA_VISIBLE_DEVICES=1 python train_spk_recognition.py --data egs/tedlium/data/
 
 Train Spectrogram Generation model 
 ```bash 
-CUDA_VISIBLE_DEVICES=1 python train_generator.py --data egs/tedlium/data/ --set train
+CUDA_VISIBLE_DEVICES=0 python train_generator.py --data egs/tedlium/data/ --set train
 ```
 
 kaldi/src/featbin/compute-spectrogram-feats --output-format=kaldi "scp:egs/tedlium/data/train/wav.scp" "ark:egs/tedlium/data/train/spectrogram_feats.ark"
