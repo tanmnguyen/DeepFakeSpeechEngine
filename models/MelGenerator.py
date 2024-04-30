@@ -7,83 +7,9 @@ import torch.nn as nn
 import torch.optim as optim
 from torchmetrics import Accuracy
 
-from einops import rearrange
+from .Generator import Generator
 from .Discriminator import Discriminator
 from utils.batch import process_mel_spectrogram
-
-class MelShiftNetwork(nn.Module):
-    def __init__(self, in_channels=80):
-        super(MelShiftNetwork, self).__init__()
-
-        self.fc = nn.Linear(in_channels, in_channels)
-        self.relu = nn.ReLU() 
-
-        self.melspec_encoder_1 = nn.TransformerEncoder(
-            nn.TransformerEncoderLayer(d_model=in_channels, nhead=2, batch_first=True), 
-            num_layers=2
-        )
-        self.fc1 = nn.Linear(in_channels, in_channels)
-
-        self.melspec_encoder_2 = nn.TransformerEncoder(
-            nn.TransformerEncoderLayer(d_model=in_channels, nhead=2, batch_first=True), 
-            num_layers=2
-        )
-        self.fc2 = nn.Linear(in_channels, in_channels)
-
-        self.melspec_encoder_3 = nn.TransformerEncoder(
-            nn.TransformerEncoderLayer(d_model=in_channels, nhead=2, batch_first=True), 
-            num_layers=2
-        )
-        self.fc3 = nn.Linear(in_channels, in_channels)
-        self.fc_out = nn.Linear(in_channels, in_channels)
-
-    def forward(self, x):
-        """ 
-        x shape: (batch_size, input_channels, seq_len) 
-        """
-        y = self.fc(x)
-        x = self.relu(y) + x 
-
-        y = self.melspec_encoder_1(x) # (batch_size, seq_len, in_channels)
-        y = self.fc1(x)
-        x = self.relu(y + x)
-
-        y = self.melspec_encoder_2(x) # (batch_size, seq_len, in_channels)
-        y = self.fc2(x)
-        x = self.relu(y + x) 
-
-        y = self.melspec_encoder_3(x) # (batch_size, seq_len, in_channels)
-        y = self.fc3(x)
-        x = self.relu(y + x)
-
-        x = self.fc_out(x)  
-
-        return x
-
-class Generator(nn.Module):
-    def __init__(self, in_channels=80):
-        super(Generator, self).__init__()
-
-        self.mel_shift_net_up = MelShiftNetwork(in_channels=in_channels)
-        self.mel_shift_net_dn = MelShiftNetwork(in_channels=in_channels)
-        self.relu = nn.ReLU()
-
-    def forward(self, x):
-        """ 
-        x shape: (batch_size, input_channels, seq_len) 
-        """
-        # rearrange to (batch_size, seq_len, input_channels)
-        x = rearrange(x, 'b c t -> b t c') 
-        x0 = x
-
-        shift_up = self.mel_shift_net_up(x)
-        shift_dn = self.mel_shift_net_dn(x)
-
-        x = self.relu(shift_up) + x0 - self.relu(shift_dn)
-
-        x = rearrange(x, 'b t c -> b c t') # rearrange to (batch_size, input_channels, seq_len)
-        return x
-
 
 class MelGenerator(nn.Module):
     def __init__(self, asr_model: nn.Module, spk_model: nn.Module, step_size: int):
@@ -184,6 +110,34 @@ class MelGenerator(nn.Module):
 
         return loss, spk_output, asr_output, mel_mse, loss_spk, loss_asr, d_acc
     
+    def valid_generator(self, x, tokens, labels, speaker_labels, beta):
+        self.generator.eval() 
+        self.asr_model.eval()
+        self.spk_model.eval()
+
+        with torch.no_grad():
+            gen_melspec = self.generator(x)
+
+            # train adversarial discriminator
+            _, d_out_real = self.discriminator.loss(x, torch.ones(x.shape[0],).to(configs.device))
+            _, d_out_fake = self.discriminator.loss(gen_melspec.detach(), torch.zeros(x.shape[0],).to(configs.device))
+            d_acc = (self.disc_accuracy_fn(d_out_fake, torch.zeros(x.shape[0],).to(configs.device)) + \
+                    self.disc_accuracy_fn(d_out_real, torch.ones(x.shape[0],).to(configs.device))) / 2
+            
+            # train content 
+            processed_gen_melspec = process_mel_spectrogram(gen_melspec)
+            loss_spk, spk_output = self.spk_model.neg_cross_entropy_loss(processed_gen_melspec, speaker_labels)
+            loss_asr, asr_output = self.asr_model.loss(processed_gen_melspec, tokens, labels, encoder_no_grad=False)
+            adv_gen_loss, _ = self.discriminator.loss(gen_melspec, torch.ones(x.shape[0],).to(configs.device))
+            loss = loss_asr * beta[0] + loss_spk * beta[1] + adv_gen_loss * beta[2]
+
+            mel_mse = nn.functional.mse_loss(
+                gen_melspec.contiguous().view(x.shape[0], -1), 
+                x.contiguous().view(x.shape[0], -1)
+            )
+
+        return loss, spk_output, asr_output, mel_mse, loss_spk, loss_asr, d_acc
+    
     def train_speaker_recognizer(self, x, speaker_labels):
         self.spk_model.train() 
         self.spk_model.zero_grad()
@@ -202,19 +156,3 @@ class MelGenerator(nn.Module):
             self.spk_scheduler.step()
 
         return loss_spk, spk_output
-
-    # def valid_generator(self, x, tokens, labels, speaker_labels):
-    #     with torch.no_grad():
-    #         gen_melspec = self.generator(x)
-    #         processed_gen_melspec = process_mel_spectrogram(gen_melspec)
-
-    #         loss_spk, spk_output = self.spk_model.neg_cross_entropy_loss(processed_gen_melspec, speaker_labels)
-    #         loss_asr, asr_output = self.asr_model.loss(processed_gen_melspec, tokens, labels, encoder_no_grad=False)
-
-    #         loss = loss_asr + loss_spk
-    #         mel_mse = nn.functional.mse_loss(
-    #             gen_melspec.contiguous().view(x.shape[0], -1), 
-    #             x.contiguous().view(x.shape[0], -1)
-    #         )
-
-    #     return loss, spk_output, asr_output, mel_mse, loss_spk, loss_asr

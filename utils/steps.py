@@ -205,7 +205,7 @@ def train_gen_net(model, train_dataloader, accuracy, log_file, train_spk, beta):
             epoch_disc_acc += d_acc
 
         torch.cuda.empty_cache()
-        if i % 1 == 0:
+        if i % 100 == 0:
             log(f"Loss: {epoch_loss / (i+1):.4f} " + \
                 f"| WER: {epoch_wer / (i+1):.4f} " + \
                 f"| SER: {epoch_ser / (i+1):.4f} " + \
@@ -220,17 +220,17 @@ def train_gen_net(model, train_dataloader, accuracy, log_file, train_spk, beta):
         'loss': epoch_loss / len(train_dataloader),
         'wer': epoch_wer / len(train_dataloader),
         'ser': epoch_ser / len(train_dataloader),
+        'speaker_accuracy': epoch_spk_acc / len(train_dataloader),
         'mel_mse': epoch_mel_mse / len(train_dataloader), 
-        'speaker_accuracy': epoch_spk_acc / len(train_dataloader)
+        'spk_loss': epoch_loss_spk / len(train_dataloader),
+        'asr_loss': epoch_loss_asr / len(train_dataloader),
+        'disc_avg_acc': epoch_disc_acc / len(train_dataloader)
     }
 
-def valid_gen_net(model, valid_dataloader, accuracy, log_file):
-    model.generator.eval()
-    model.asr_model.eval()
-    model.spk_model.eval()
-
+def valid_gen_net(model, valid_dataloader, accuracy, log_file, beta):
     epoch_loss, epoch_wer, epoch_ser, epoch_spk_acc, \
-        epoch_mel_mse, epoch_loss_spk, epoch_loss_asr = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 
+        epoch_mel_mse, epoch_loss_spk, epoch_loss_asr, epoch_disc_acc = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+    
     for i, (melspectrogram_features, tokens, labels, speaker_labels) in enumerate(tqdm(valid_dataloader)):
         melspectrogram_features, tokens, labels, speaker_labels = \
             melspectrogram_features.to(configs.device), \
@@ -238,11 +238,11 @@ def valid_gen_net(model, valid_dataloader, accuracy, log_file):
             labels.to(configs.device), \
             speaker_labels.to(configs.device)
 
-        with torch.no_grad():
-            loss, spk_output, asr_output, mel_mse, loss_spk, loss_asr = model.valid_generator(
-                melspectrogram_features, tokens, labels, speaker_labels
-            )
+        loss, spk_output, asr_output, mel_mse, loss_spk, loss_asr, d_acc = model.valid_generator(
+            melspectrogram_features, tokens, labels, speaker_labels, beta,
+        )
 
+        with torch.no_grad():
             wer, ser = compute_error_rate(asr_output, labels)
             acc = accuracy(spk_output, speaker_labels)
 
@@ -253,23 +253,28 @@ def valid_gen_net(model, valid_dataloader, accuracy, log_file):
             epoch_spk_acc += acc
             epoch_loss_spk += loss_spk.item()
             epoch_loss_asr += loss_asr.item()
+            epoch_disc_acc += d_acc
 
         torch.cuda.empty_cache()
 
-    log(f"Loss: {epoch_loss / (i+1):.4f} " + \
-                f"| WER: {epoch_wer / (i+1):.4f} " + \
-                f"| SER: {epoch_ser / (i+1):.4f} " + \
-                f"| Speaker Accuracy: {epoch_spk_acc / (i+1):.4f} " + \
-                f"| Mel MSE: {epoch_mel_mse / (i+1):.4f}" + \
-                f"| SPK Loss: {epoch_loss_spk / (i+1):.4f}" + \
-                f"| ASR Loss: {epoch_loss_asr / (i+1):.4}" + \
-                f"| LR: {model.gen_optimizer.param_groups[0]['lr']:.4f}", log_file)
+    log(f"[Valid] Loss: {epoch_loss / valid_dataloader:.4f} " + \
+        f"| WER: {epoch_wer / valid_dataloader:.4f} " + \
+        f"| SER: {epoch_ser / valid_dataloader:.4f} " + \
+        f"| Speaker Accuracy: {epoch_spk_acc / valid_dataloader:.4f} " + \
+        f"| Mel MSE: {epoch_mel_mse / valid_dataloader:.4f}" + \
+        f"| SPK Loss: {epoch_loss_spk / valid_dataloader:.4f}" + \
+        f"| ASR Loss: {epoch_loss_asr / valid_dataloader:.4}" + \
+        f"| Disc Avg Acc: {epoch_disc_acc / valid_dataloader:.4}" + \
+        f"| LR: {model.gen_optimizer.param_groups[0]['lr']:.4f}", log_file)
 
     return {
         'loss': epoch_loss / len(valid_dataloader),
         'wer': epoch_wer / len(valid_dataloader),
         'ser': epoch_ser / len(valid_dataloader),
+        'speaker_accuracy': epoch_spk_acc / len(valid_dataloader),
         'mel_mse': epoch_mel_mse / len(valid_dataloader), 
-        'speaker_accuracy': epoch_spk_acc / len(valid_dataloader)
+        'spk_loss': epoch_loss_spk / len(valid_dataloader),
+        'asr_loss': epoch_loss_asr / len(valid_dataloader),
+        'disc_avg_acc': epoch_disc_acc / len(valid_dataloader)
     }
     

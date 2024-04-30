@@ -79,19 +79,27 @@ def main(args):
             f"Loss: {train_history['loss']} | " +
             f"WER: {train_history['wer']} | " +
             f"SER: {train_history['ser']} | " +
-            f"Speaker Accuracy: {train_history['speaker_accuracy']}",
+            f"Speaker Accuracy: {train_history['speaker_accuracy']} | " +
+            f"Mel MSE: {train_history['mel_mse']} | " + 
+            f"SPK Loss: {train_history['spk_loss']} | " + 
+            f"ASR Loss: {train_history['asr_loss']} | " +
+            f"Disc Avg acc: {train_history['disc_avg_acc']}",
             log_file
         )
 
-        # valid_history = valid_gen_net(gen_model, valid_dataloader, accuracy, log_file)
-        # log(
-        #     f"[Valid] Epoch: {epoch+1}/{configs.mel_generator_cfg['epochs']} - " +
-        #     f"Loss: {valid_history['loss']} | " +
-        #     f"WER: {valid_history['wer']} | " +
-        #     f"SER: {valid_history['ser']} | " +
-        #     f"Speaker Accuracy: {valid_history['speaker_accuracy']}",
-        #     log_file
-        # )
+        valid_history = valid_gen_net(gen_model, valid_dataloader, accuracy, log_file)
+        log(
+            f"[Valid] Epoch: {epoch+1}/{configs.mel_generator_cfg['epochs']} - " +
+            f"Loss: {valid_history['loss']} | " +
+            f"WER: {valid_history['wer']} | " +
+            f"SER: {valid_history['ser']} | " +
+            f"Speaker Accuracy: {valid_history['speaker_accuracy']} | " +
+            f"Mel MSE: {valid_history['mel_mse']} | " + 
+            f"SPK Loss: {valid_history['spk_loss']} | " + 
+            f"ASR Loss: {valid_history['asr_loss']} | " +
+            f"Disc Avg acc: {valid_history['disc_avg_acc']}",
+            log_file
+        )
 
         torch.save(gen_model.state_dict(), os.path.join(result_dir, f"gen_model_epoch_{epoch+1}.pt"))
 
