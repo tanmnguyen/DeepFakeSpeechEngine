@@ -10,8 +10,8 @@ from utils.io import log
 from torchmetrics import Accuracy
 from torch.utils.data import DataLoader
 from utils.networks import load_asr, load_spk
+from utils.steps import train_gen_net, valid_gen_net
 from utils.batch import spectrogram_generation_collate_fn
-from utils.steps import train_gen_net, valid_gen_net, init_gen_net_identity
 from datasets.SpectrogramGenerationDataset import SpectrogramGenerationDataset
 
 from models.MelGenerator import MelGenerator
