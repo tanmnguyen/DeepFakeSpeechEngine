@@ -16,9 +16,8 @@ class SPKTDNN(nn.Module):
             pooling_func=pooling_func
         )
 
-
         self.dropout = nn.Dropout(0.1)
-        self.fc = nn.Linear(feat_dim, num_classes)
+        self.fc = nn.Linear(g, num_classes)
 
     def forward(self, mel):
         x = rearrange(mel, 'b t c -> b c t')
