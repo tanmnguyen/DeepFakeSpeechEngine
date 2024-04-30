@@ -33,8 +33,15 @@ log_file = os.path.join(result_dir, 'log.txt')
 
 torch.manual_seed(3001)
 def main(args):
+    configs.speaker_recognition_cfg['train_option']['spk2idx'] = configs.get_json(
+        f"json/tedlium_{args.set}_spks.json",
+        start_index=args.start_spk_idx,
+        num_keys=50,
+        shuffle=False
+    )
+    log(configs.speaker_recognition_cfg, log_file)
 
-    dataset = SpeakerRecognitionDataset(os.path.join(args.data, "train"), configs.speaker_recognition_cfg['train_option'])
+    dataset = SpeakerRecognitionDataset(os.path.join(args.data, args.set), configs.speaker_recognition_cfg['train_option'])
     
     if len(dataset) <= 500:
         train_dataset, valid_dataset = torch.utils.data.random_split(dataset, [0.5, 0.5])
@@ -56,27 +63,6 @@ def main(args):
     )
 
     model = SPKTDNN(num_classes=dataset.num_classes).to(configs.device)
-
-    # dims = ModelDimensions(
-    #     n_mels=80, 
-    #     n_audio_ctx=1500, 
-    #     n_audio_state=384, 
-    #     n_audio_head=6, 
-    #     n_audio_layer=4, 
-    #     n_vocab=51864, 
-    #     n_text_ctx=448, 
-    #     n_text_state=384, 
-    #     n_text_head=6, 
-    #     n_text_layer=4
-    # )
-
-    # # model = SPKWhisper(
-    # #     dims, 
-    # #     num_classes = dataset.num_classes,
-    # #     whisper_model_weight = "weights/asr/tiny_whisper_model.pth"
-    # # ).to(configs.device)
-
-    # model = SPKConv(num_classes=dataset.num_classes).to(configs.device)
 
     log(model, log_file)
     log(f"Device: {configs.device}", log_file)
@@ -123,6 +109,21 @@ if __name__ == '__main__':
                         '--data',
                         required=True,
                         help="path to kaldi data format directory. This should contains dev, test, and train folders")
+    
+
+    parser.add_argument('-set',
+                        '--set',
+                        type=str,
+                        default="train",
+                        required=False,
+                        help="[train/test/dev] set")
+    
+    parser.add_argument('-start_spk_idx',
+                        '--start_spk_idx',
+                        type=int,
+                        default=0,
+                        required=False,
+                        help="Start speaker index")
 
 
     args = parser.parse_args()
