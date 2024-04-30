@@ -26,6 +26,16 @@ log_file = os.path.join(result_dir, 'log.txt')
 
 torch.manual_seed(3001)
 def main(args):
+    # update the speaker recognition configuration
+    configs.speaker_recognition_cfg['train_option']['spk2idx'] = configs.get_json(
+        f"json/tedlium_{args.set}_spks.json",
+        start_index=args.start_spk_idx,
+        num_keys=50,
+        shuffle=False
+    )
+    configs.speaker_recognition_cfg['speaker_ids'] = os.path.join(args.set, "utt2spk")
+    log(configs.speaker_recognition_cfg, log_file)
+
     dataset = SpectrogramGenerationDataset(
         os.path.join(args.data, args.set), 
         configs.speaker_recognition_cfg['train_option']
@@ -55,6 +65,9 @@ def main(args):
         spk_model=spk_model,
         step_size = len(train_dataloader) * 2,
     ).to(configs.device)
+
+    if args.resume is not None:
+        gen_model.load_state_dict(torch.load(args.resume))
 
     log(gen_model, log_file)
     log(f"Device: {configs.device}", log_file)
@@ -117,6 +130,19 @@ if __name__ == '__main__':
                         default="train",
                         required=False,
                         help="[train/test/dev] set")
+    
+    parser.add_argument('-start_spk_idx',
+                        '--start_spk_idx',
+                        type=int,
+                        default=0,
+                        required=False,
+                        help="Start speaker index")
+    
+    parser.add_argument('-resume',
+                        '--resume',
+                        type=str,
+                        required=False,
+                        help="Path to a weight file to resume training from")
 
 
     args = parser.parse_args()
