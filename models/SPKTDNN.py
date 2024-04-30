@@ -15,21 +15,31 @@ class SPKTDNN(nn.Module):
         #     embed_dim=embed_dim,
         #     pooling_func=pooling_func
         # )
-        self.rnn1 = nn.LSTM(feat_dim, embed_dim, 2, batch_first=True, bidirectional=True)
-        self.rnn2 = nn.LSTM(embed_dim * 2, embed_dim, 2, batch_first=True, bidirectional=True)
+        #self.rnn1 = nn.LSTM(feat_dim, embed_dim, 2, batch_first=True, bidirectional=True)
+        #self.rnn2 = nn.LSTM(embed_dim * 2, embed_dim, 2, batch_first=True, bidirectional=True)
+        # transformer encoder 
+        self.encoder = nn.TransformerEncoder(
+            nn.TransformerEncoderLayer(
+                d_model=feat_dim,
+                nhead=4,
+                dim_feedforward=256,
+                dropout=0.1
+            ),
+            num_layers=4g
+        )
 
         self.dropout = nn.Dropout(0.1)
-        self.fc = nn.Linear(embed_dim * 2, num_classes)
+        self.fc = nn.Linear(feat_dim, num_classes)
 
     def forward(self, mel):
         x = rearrange(mel, 'b t c -> b c t')
         # compute embeddings
         # x = self.encoder(x)
         # apply LSTM
-        x, _ = self.rnn1(x)
-        x, _ = self.rnn2(x)
-        # take the last hidden state
-        x = x[:, -1, :]
+        x = self.encoder(x)
+        
+        # average pooling
+        x = x.mean(dim=1)
 
         # apply dropout
         x = self.dropout(x)
