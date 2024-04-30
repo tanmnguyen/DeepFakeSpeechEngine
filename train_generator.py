@@ -87,7 +87,7 @@ def main(args):
             log_file
         )
 
-        valid_history = valid_gen_net(gen_model, valid_dataloader, accuracy, log_file)
+        valid_history = valid_gen_net(gen_model, valid_dataloader, accuracy, log_file, beta=(1,1,1))
         log(
             f"[Valid] Epoch: {epoch+1}/{configs.mel_generator_cfg['epochs']} - " +
             f"Loss: {valid_history['loss']} | " +
