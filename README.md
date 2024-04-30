@@ -29,7 +29,12 @@ CUDA_VISIBLE_DEVICES=0 python train_asr.py --data egs/tedlium/data
 
 Train Speaker Recognition model 
 ```bash 
-CUDA_VISIBLE_DEVICES=3 python train_spk_recognition.py --data egs/tedlium/data/ --set train --start_spk_idx 0
+CUDA_VISIBLE_DEVICES=0 python train_spk_recognition.py --data egs/tedlium/data/ --set test --start_spk_idx 0
+CUDA_VISIBLE_DEVICES=0 python train_spk_recognition.py --data egs/tedlium/data/ --set dev --start_spk_idx 0
+CUDA_VISIBLE_DEVICES=0 python train_spk_recognition.py --data egs/tedlium/data/ --set train --start_spk_idx 50
+CUDA_VISIBLE_DEVICES=0 python train_spk_recognition.py --data egs/tedlium/data/ --set train --start_spk_idx 100
+CUDA_VISIBLE_DEVICES=0 python train_spk_recognition.py --data egs/tedlium/data/ --set train --start_spk_idx 150
+CUDA_VISIBLE_DEVICES=0 python train_spk_recognition.py --data egs/tedlium/data/ --set train --start_spk_idx 200
 ```
 
 Train Spectrogram Generation model 

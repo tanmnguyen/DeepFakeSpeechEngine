@@ -39,6 +39,7 @@ def main(args):
         num_keys=50,
         shuffle=False
     )
+    configs.speaker_recognition_cfg['speaker_ids'] = os.path.join(args.set, "utt2spk")
     log(configs.speaker_recognition_cfg, log_file)
 
     dataset = SpeakerRecognitionDataset(os.path.join(args.data, args.set), configs.speaker_recognition_cfg['train_option'])
