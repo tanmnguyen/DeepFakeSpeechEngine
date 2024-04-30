@@ -53,14 +53,16 @@ def main(args):
         train_dataset, 
         batch_size=configs.speaker_recognition_cfg['batch_size'],
         collate_fn=speaker_recognition_collate_fn, 
-        shuffle=True
+        shuffle=True,
+        drop_last=True,
     )
 
     valid_dataloader = DataLoader(
         valid_dataset, 
         batch_size=configs.speaker_recognition_cfg['batch_size'],
         collate_fn=speaker_recognition_collate_fn, 
-        shuffle=False
+        shuffle=False,
+        drop_last=True,
     )
 
     model = SPKTDNN(num_classes=dataset.num_classes).to(configs.device)
@@ -103,7 +105,7 @@ def main(args):
         )
 
         torch.save(model.state_dict(), os.path.join(result_dir, f"spk_model_epoch_{epoch+1}.pt"))
-        
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
 

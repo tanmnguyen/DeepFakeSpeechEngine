@@ -47,14 +47,16 @@ def main(args):
         train_dataset, 
         batch_size=configs.mel_generator_cfg['batch_size'],
         collate_fn=spectrogram_generation_collate_fn, 
-        shuffle=True
+        shuffle=True,
+        drop_last=True,
     )
 
     valid_dataloader = DataLoader(
         valid_dataset, 
         batch_size=configs.mel_generator_cfg['batch_size'],
         collate_fn=spectrogram_generation_collate_fn, 
-        shuffle=False
+        shuffle=False,
+        drop_last=True,
     )
 
     asr_model = load_asr(configs.mel_generator_cfg['asr_weight'])
