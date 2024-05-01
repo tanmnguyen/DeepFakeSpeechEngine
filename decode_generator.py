@@ -35,10 +35,9 @@ def main(args):
         shuffle=False
     )
     configs.speaker_recognition_cfg['speaker_ids'] = os.path.join(args.set, "utt2spk")
-    log(configs.speaker_recognition_cfg, log_file)
 
-    # update the mel generator configuration
-    configs.mel_generator_cfg['spk_weight'] = args.spk
+    # log configurations
+    log(configs.speaker_recognition_cfg, log_file)
     log(configs.mel_generator_cfg, log_file)
 
     dataset = SpectrogramGenerationDataset(
@@ -46,15 +45,7 @@ def main(args):
         configs.speaker_recognition_cfg['train_option']
     )
 
-    train_dataset, valid_dataset = torch.utils.data.random_split(dataset, [0.8, 0.2])
-
-    train_dataloader = DataLoader(
-        train_dataset, 
-        batch_size=configs.mel_generator_cfg['batch_size'],
-        collate_fn=spectrogram_generation_collate_fn, 
-        shuffle=True,
-        drop_last=True,
-    )
+    _, valid_dataset = torch.utils.data.random_split(dataset, [0.8, 0.2])
 
     valid_dataloader = DataLoader(
         valid_dataset, 
@@ -70,58 +61,33 @@ def main(args):
     gen_model = MelGenerator(
         asr_model=asr_model, 
         spk_model=spk_model,
-        step_size = len(train_dataloader) * 2,
+        step_size = 0,
     ).to(configs.device)
 
-    if args.resume is not None:
-        gen_model.load_state_dict(torch.load(args.resume))
+    gen_model.load_state_dict(torch.load(args.weight))
 
+        
     log(gen_model, log_file)
     log(f"Device: {configs.device}", log_file)
-    log(f"Train set size: {len(train_dataset)}", log_file)
     log(f"Valid set size: {len(valid_dataset)}", log_file)
     log(f"Number of parameters: {sum(p.numel() for p in gen_model.parameters())}", log_file)
 
     accuracy = Accuracy(task="multiclass", num_classes=dataset.num_classes).to(configs.device)
 
-    # initialize the network optimal solution first by learning the identity function
-    for epoch in range(configs.mel_generator_cfg['epochs']):
-        train_history = train_gen_net(
-            gen_model, 
-            train_dataloader, 
-            accuracy, 
-            log_file, 
-            train_spk=1 if epoch < 1 else 0.005, 
-            beta=(0.2, 0.2, 20) if epoch < 1 else (7, 5, 2),
-        )
-        log(
-            f"[Train] Epoch: {epoch+1}/{configs.mel_generator_cfg['epochs']} - " +
-            f"Loss: {train_history['loss']} | " +
-            f"WER: {train_history['wer']} | " +
-            f"SER: {train_history['ser']} | " +
-            f"Speaker Accuracy: {train_history['speaker_accuracy']} | " +
-            f"Mel MSE: {train_history['mel_mse']} | " + 
-            f"SPK Loss: {train_history['spk_loss']} | " + 
-            f"ASR Loss: {train_history['asr_loss']} | " +
-            f"Disc Avg acc: {train_history['disc_avg_acc']}",
-            log_file
-        )
+    valid_history = valid_gen_net(gen_model, valid_dataloader, accuracy, log_file, beta=(1,1,1))
+    log(
+        f"[Valid] - " +
+        f"Loss: {valid_history['loss']} | " +
+        f"WER: {valid_history['wer']} | " +
+        f"SER: {valid_history['ser']} | " +
+        f"Speaker Accuracy: {valid_history['speaker_accuracy']} | " +
+        f"Mel MSE: {valid_history['mel_mse']} | " + 
+        f"SPK Loss: {valid_history['spk_loss']} | " + 
+        f"ASR Loss: {valid_history['asr_loss']} | " +
+        f"Disc Avg acc: {valid_history['disc_avg_acc']}",
+        log_file
+    )
 
-        valid_history = valid_gen_net(gen_model, valid_dataloader, accuracy, log_file, beta=(1,1,1))
-        log(
-            f"[Valid] Epoch: {epoch+1}/{configs.mel_generator_cfg['epochs']} - " +
-            f"Loss: {valid_history['loss']} | " +
-            f"WER: {valid_history['wer']} | " +
-            f"SER: {valid_history['ser']} | " +
-            f"Speaker Accuracy: {valid_history['speaker_accuracy']} | " +
-            f"Mel MSE: {valid_history['mel_mse']} | " + 
-            f"SPK Loss: {valid_history['spk_loss']} | " + 
-            f"ASR Loss: {valid_history['asr_loss']} | " +
-            f"Disc Avg acc: {valid_history['disc_avg_acc']}",
-            log_file
-        )
-
-        torch.save(gen_model.state_dict(), os.path.join(result_dir, f"gen_model_epoch_{epoch+1}.pt"))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
@@ -145,17 +111,11 @@ if __name__ == '__main__':
                         required=False,
                         help="Start speaker index")
     
-    parser.add_argument('-spk',
-                        '--spk',
-                        type=str,
-                        required=True,
-                        help="Path to a weight file of the speaker recognition model")
-    
-    parser.add_argument('-resume',
-                        '--resume',
+    parser.add_argument('-weight',
+                        '--weight',
                         type=str,
                         required=False,
-                        help="Path to a weight file to resume training from")
+                        help="Path to a pretrained weight of the mel-generation model")
 
 
     args = parser.parse_args()
