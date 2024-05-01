@@ -58,13 +58,25 @@ def main(args):
     asr_model = load_asr(configs.mel_generator_cfg['asr_weight'])
     spk_model = load_spk(configs.mel_generator_cfg['spk_weight'], num_classes=dataset.num_classes)
     
-    gen_model = MelGenerator(
-        asr_model=asr_model, 
-        spk_model=spk_model,
-        step_size = 0,
-    ).to(configs.device)
+    try:
+        gen_model = MelGenerator(
+            asr_model=asr_model, 
+            spk_model=spk_model,
+            step_size = 0,
+            dis_hidden_dim=16,
+        ).to(configs.device)
 
-    gen_model.load_state_dict(torch.load(args.weight))
+        gen_model.load_state_dict(torch.load(args.weight))
+    except:
+        gen_model = MelGenerator(
+            asr_model=asr_model, 
+            spk_model=spk_model,
+            step_size = 0,
+            dis_hidden_dim=8,
+        ).to(configs.device)
+
+        gen_model.load_state_dict(torch.load(args.weight))
+
 
         
     log(gen_model, log_file)

@@ -13,12 +13,12 @@ from .Discriminator import Discriminator
 from utils.batch import process_mel_spectrogram
 
 class MelGenerator(nn.Module):
-    def __init__(self, asr_model: nn.Module, spk_model: nn.Module, step_size: int):
+    def __init__(self, asr_model: nn.Module, spk_model: nn.Module, step_size: int, dis_hidden_dim: int = 16):
         super(MelGenerator, self).__init__()
         self.generator = Generator()
         self.asr_model = asr_model 
         self.spk_model = spk_model
-        self.discriminator = Discriminator()
+        self.discriminator = Discriminator(hidden_dim=dis_hidden_dim)
 
         self.set_training_config(step_size) 
 
