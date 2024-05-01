@@ -1,3 +1,4 @@
+# UNI: tmn2134
 # This file generate a new spectrogram from the original spectrogram 
 import os 
 import time 
@@ -35,6 +36,10 @@ def main(args):
     )
     configs.speaker_recognition_cfg['speaker_ids'] = os.path.join(args.set, "utt2spk")
     log(configs.speaker_recognition_cfg, log_file)
+
+    # update the mel generator configuration
+    configs.mel_generator_cfg['spk_weight'] = args.spk
+    log(configs.mel_generator_cfg, log_file)
 
     dataset = SpectrogramGenerationDataset(
         os.path.join(args.data, args.set), 
@@ -87,7 +92,7 @@ def main(args):
             accuracy, 
             log_file, 
             train_spk=1 if epoch < 1 else 0.005, 
-            beta=(0.2, 0.2, 20) if epoch < 1 else (7, 5, 1),
+            beta=(0.2, 0.2, 20) if epoch < 1 else (7, 5, 10),
         )
         log(
             f"[Train] Epoch: {epoch+1}/{configs.mel_generator_cfg['epochs']} - " +
@@ -139,6 +144,12 @@ if __name__ == '__main__':
                         default=0,
                         required=False,
                         help="Start speaker index")
+    
+    parser.add_argument('-spk',
+                        '--spk',
+                        type=str,
+                        required=True,
+                        help="Path to a weight file of the speaker recognition model")
     
     parser.add_argument('-resume',
                         '--resume',
