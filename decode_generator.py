@@ -66,7 +66,7 @@ def main(args):
             dis_hidden_dim=16,
         ).to(configs.device)
 
-        gen_model.load_state_dict(torch.load(args.weight))
+        gen_model.load_state_dict(torch.load(args.weight, map_location=configs.device))
     except:
         gen_model = MelGenerator(
             asr_model=asr_model, 
@@ -75,7 +75,7 @@ def main(args):
             dis_hidden_dim=8,
         ).to(configs.device)
 
-        gen_model.load_state_dict(torch.load(args.weight))
+        gen_model.load_state_dict(torch.load(args.weight, map_location=configs.device))
 
 
         
