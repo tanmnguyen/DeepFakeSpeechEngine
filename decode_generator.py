@@ -47,6 +47,10 @@ def main(args):
 
     _, valid_dataset = torch.utils.data.random_split(dataset, [0.8, 0.2])
 
+    # set max length for example decoding task 
+    if args.max_len:
+        valid_dataset.len = min(args.max_len, len(valid_dataset))
+
     valid_dataloader = DataLoader(
         valid_dataset, 
         batch_size=configs.mel_generator_cfg['batch_size'],
@@ -122,6 +126,13 @@ if __name__ == '__main__':
                         default=0,
                         required=False,
                         help="Start speaker index")
+    
+    parser.add_argument('-max_len',
+                        '--max_len',
+                        type=int,
+                        required=False,
+                        help="Max length for the validation dataset")
+    
     
     parser.add_argument('-weight',
                         '--weight',

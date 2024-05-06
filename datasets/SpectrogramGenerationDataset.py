@@ -23,9 +23,10 @@ class SpectrogramGenerationDataset(Dataset):
                 
         self.num_classes = spk_dataset.num_classes
         self.idx_to_utteranceid = {i: utterance_id for i, utterance_id in enumerate(self.data.keys())}
+        self.len = len(self.data)
 
     def __len__(self):
-        return len(self.data)
+        return self.len
     
     def __getitem__(self, idx):
         utterance_id = self.idx_to_utteranceid[idx]
