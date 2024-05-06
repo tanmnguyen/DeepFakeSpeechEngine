@@ -47,9 +47,9 @@ def main(args):
 
     _, valid_dataset = torch.utils.data.random_split(dataset, [0.8, 0.2])
 
-    # set max length for example decoding task 
+    # resize length of the validation dataset
     if args.max_len:
-        valid_dataset.len = min(args.max_len, len(valid_dataset))
+        valid_dataset.indices = valid_dataset.indices[:args.max_len]
 
     valid_dataloader = DataLoader(
         valid_dataset, 
